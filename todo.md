@@ -19,4 +19,5 @@
 - [x] Criar atalho Windows que instale somente as ferramentas Android e gere a APK sem Android Studio
 - [ ] Diagnosticar a mensagem de erro do atalho Windows sem Android Studio
 - [x] Preparar repositório GitHub DriverTouch Pop com código e relatórios de continuidade
+- [x] Criar e enviar o repositório privado DriverTouch Pop para GitHub
 - [x] Reconectar a autenticação do GitHub para publicar o repositório DriverTouch Pop
