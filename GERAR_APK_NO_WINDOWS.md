@@ -1,31 +1,45 @@
-# Gerar a APK no Windows sem Android Studio
+# Gerar APK no Windows sem Android Studio
 
-Você não precisa instalar nem abrir o Android Studio. O arquivo `build-apk-windows.bat` baixa apenas as ferramentas necessárias para criar a APK, prepara o projeto e abre a pasta com o arquivo final.
+## Passo único
 
-## Faça somente isto
+Dê dois cliques em:
 
-1. Baixe o ZIP do projeto pelo menu **⋯ → Download as ZIP**.
-2. Clique com o botão direito no ZIP, escolha **Extrair Tudo…** e depois **Extrair**.
-3. Abra a pasta extraída.
-4. Dê dois cliques em **`build-apk-windows.bat`**.
-5. Se o Windows perguntar se pode instalar **Node.js**, **Java** ou permitir uma ação administrativa, clique em **Sim/Permitir**.
-6. Espere. Na primeira vez o procedimento pode demorar porque baixa os componentes Android necessários. Não feche a janela preta.
-7. Quando terminar, a pasta da APK abre sozinha. O arquivo se chama **`app-debug.apk`**.
+```text
+build-apk-windows.bat
+```
 
-## Onde estará o arquivo
+Na primeira execução, o roteiro baixa:
+
+- Microsoft OpenJDK 17 portátil;
+- Android Command-line Tools oficiais;
+- Android SDK 36 e Build Tools 36.0.0;
+- Android NDK 27;
+- dependências JavaScript do projeto.
+
+Java e Android SDK ficam dentro de `%LOCALAPPDATA%\DriverTouchPop`. Não é necessário instalar Android Studio, criar conta, informar token nem publicar o aplicativo.
+
+Reserve pelo menos **7 GB livres** no disco C: para a primeira execução. Depois que o NDK estiver instalado, o roteiro exige no mínimo 2 GB livres. Os ZIPs temporários são removidos automaticamente.
+
+O roteiro também executa TypeScript e testes antes do Gradle. Se qualquer etapa falhar, a mensagem mostra a linha e o caminho do log completo.
+
+## Resultado
 
 ```text
 android\app\build\outputs\apk\debug\app-debug.apk
 ```
 
-Envie esse arquivo para o seu celular Android e toque nele para instalar. Se o Android perguntar se pode instalar aplicativos dessa origem, permita apenas para concluir a instalação.
+A pasta da APK abre automaticamente quando o build termina.
 
-> Não é necessário token, Android Studio ou publicar no Google Play. O roteiro usa as Android SDK Command-line Tools e o `sdkmanager`, que a documentação oficial do Android prevê para instalar os pacotes de SDK sem a interface do Android Studio [1].
+A APK atual é destinada a aparelhos Android 64-bit (`arm64-v8a`). Como alternativa, o workflow **Android debug APK** do GitHub Actions gera o mesmo artefato fora do computador local.
 
-## Se a janela preta parar
+## Logs
 
-Tire uma foto da janela preta inteira e envie aqui. A mensagem mostrará exatamente qual componente faltou ou falhou.
+```text
+build-logs\build-AAAAMMDD-HHMMSS.log
+```
 
-## Referência
+Os arquivos `.log` são ignorados pelo Git e podem ser enviados para diagnóstico sem precisar fotografar a janela.
 
-[1]: https://developer.android.com/tools/sdkmanager "Android Developers — sdkmanager"
+## Primeiro teste
+
+Instale a APK apenas em um Android de teste. Ative DriverTouch Pop em Acessibilidade, mantenha o modo **Teste** e faça a calibração guiada com o veículo parado. Não use o modo assistido antes de conferir o Registro.

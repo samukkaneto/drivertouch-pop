@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { clampNormalized, getReadiness, isValidCalibration } from "../lib/calibration";
+import {
+  clampNormalized,
+  getReadiness,
+  isValidCalibration,
+  parseNormalizedInput,
+  touchPositionToNormalized,
+} from "../lib/calibration";
 import { DEFAULT_SETTINGS } from "../lib/safe-accept-types";
 
 describe("calibration helpers", () => {
@@ -12,13 +18,38 @@ describe("calibration helpers", () => {
 
   it("requires a valid point before the assistant can be armed", () => {
     expect(isValidCalibration(null)).toBe(false);
-    expect(isValidCalibration({ x: 0.5, y: 0.7, updatedAt: "2026-08-26T00:00:00.000Z" })).toBe(true);
+    expect(
+      isValidCalibration({
+        x: 0.5,
+        y: 0.7,
+        updatedAt: "2026-08-26T00:00:00.000Z",
+      }),
+    ).toBe(true);
     expect(getReadiness(DEFAULT_SETTINGS).label).toBe("Calibração pendente");
   });
 
   it("reports test mode without claiming a gesture will be sent", () => {
-    const readiness = getReadiness({ ...DEFAULT_SETTINGS, calibration: { x: 0.5, y: 0.7, updatedAt: "2026-08-26T00:00:00.000Z" }, isArmed: true, mode: "test" });
+    const readiness = getReadiness({
+      ...DEFAULT_SETTINGS,
+      calibration: { x: 0.5, y: 0.7, updatedAt: "2026-08-26T00:00:00.000Z" },
+      isArmed: true,
+      mode: "test",
+    });
     expect(readiness.label).toBe("Modo de teste ativo");
-    expect(readiness.detail).toContain("nenhum gesto");
+    expect(readiness.detail).toContain("sem enviar gesto");
+  });
+
+  it("parses decimal comma and rejects coordinates outside the screen", () => {
+    expect(parseNormalizedInput("0,625")).toBe(0.625);
+    expect(parseNormalizedInput("1")).toBe(1);
+    expect(parseNormalizedInput("")).toBeNull();
+    expect(parseNormalizedInput("-0.1")).toBeNull();
+    expect(parseNormalizedInput("1.01")).toBeNull();
+  });
+
+  it("normalizes a touch using the measured view size", () => {
+    expect(touchPositionToNormalized(120, 240)).toBe(0.5);
+    expect(touchPositionToNormalized(400, 320)).toBe(1);
+    expect(touchPositionToNormalized(10, 0)).toBe(0);
   });
 });

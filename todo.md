@@ -1,23 +1,34 @@
-# Project TODO
+# DriverTouch Pop — plano de continuidade
 
-- [x] Definir interface mobile, fluxos e cores do PopMove Safe Accept
-- [x] Criar painel local de estado, modo e ações principais
-- [x] Implementar persistência local das configurações do motorista
-- [x] Criar tela de calibração para o ponto e a duração do toque
-- [x] Criar tela de permissões e guia de ativação do Android
-- [x] Criar registro local de eventos técnicos sem dados de corrida
-- [x] Adicionar base nativa Android para o serviço de acessibilidade e gesto prolongado
-- [x] Implementar modo de teste e limite de uma ação por evento
-- [x] Gerar ícone exclusivo e atualizar a identidade do aplicativo
-- [x] Validar tipagem, testes e configuração de build Android
-- [x] Salvar checkpoint e orientar a geração de APK para teste físico
-- [ ] Testar a detecção e a calibração com o POP driver em um aparelho Android físico
-- [ ] Identificar e remover o pedido inesperado de token no fluxo de geração ou teste do APK
-- [x] Verificar alternativa de compilação da APK sem token de publicação
-- [x] Preparar roteiro Windows para gerar a APK de teste localmente
-- [ ] Corrigir ou obter suporte para a compilação Android que retorna ao estado inicial sem liberar APK
-- [x] Criar atalho Windows que instale somente as ferramentas Android e gere a APK sem Android Studio
-- [ ] Diagnosticar a mensagem de erro do atalho Windows sem Android Studio
-- [x] Preparar repositório GitHub DriverTouch Pop com código e relatórios de continuidade
-- [x] Criar e enviar o repositório privado DriverTouch Pop para GitHub
-- [x] Reconectar a autenticação do GitHub para publicar o repositório DriverTouch Pop
+## Concluído na versão 0.2.0
+
+- [x] Remover backend, OAuth, banco, LLM e telas de demonstração da Manus
+- [x] Remover permissões e dependências sem relação com o produto
+- [x] Renomear e organizar o módulo nativo `safe-accept`
+- [x] Corrigir a ordem e os diagnósticos do build Windows
+- [x] Usar Java 17 portátil e Android Command-line Tools
+- [x] Iniciar aplicativo e serviço sempre desarmados
+- [x] Desarmar ao trocar modo, calibração ou parâmetros
+- [x] Exigir confirmação para armar o modo assistido
+- [x] Limitar a uma tentativa por aparição do marcador
+- [x] Integrar eventos nativos à tela Registro
+- [x] Corrigir a grade manual para usar dimensões reais
+- [x] Criar calibração guiada sobre o POP driver
+- [x] Adicionar diagnóstico de árvore/marker no modo de teste
+- [x] Ampliar os testes de calibração e migração segura
+- [x] Alinhar dependências ao Expo SDK 54
+- [x] Aprovar Expo Doctor, TypeScript, testes e prebuild
+- [x] Compilar e validar o módulo Kotlin `safe-accept`
+- [x] Criar build de APK reproduzível no GitHub Actions
+
+## Depende de aparelho físico
+
+- [ ] Instalar a APK debug
+- [ ] Confirmar o pacote real do POP driver
+- [ ] Confirmar que o serviço aparece e pode ser revogado em Acessibilidade
+- [ ] Validar a sobreposição de calibração no modelo do aparelho
+- [ ] Verificar se a oferta expõe texto ou descrição acessível
+- [ ] Definir o marcador estável
+- [ ] Validar duração do toque
+- [ ] Confirmar que uma aparição gera somente um evento/gesto
+- [ ] Revisar termos da PopMove antes de qualquer distribuição

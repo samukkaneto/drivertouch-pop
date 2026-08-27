@@ -57,6 +57,7 @@ logs
 Thumbs.db
 
 # Build files
+**/build/
 *.tgz
 *.tar.gz
 .cache/

@@ -1,66 +1,69 @@
-# Build e teste
+# Build e validação
 
-## Pré-requisitos para compilação local
+## Verificações de código
 
-Uma máquina de build precisa de Node.js, Java 17 e Android SDK com `platform-tools`, `platforms;android-36` e `build-tools;36.0.0`. A ferramenta oficial `sdkmanager` pode instalar esses componentes sem a interface do Android Studio [1].
-
-| Ambiente | Caminho recomendado | Estado |
-| --- | --- | --- |
-| Linux/macOS com SDK configurado | `pnpm install` → `npx expo prebuild` → Gradle | Não testado fora do sandbox |
-| Windows sem Android Studio | `build-apk-windows.bat` | Criado; precisa de teste real |
-| Publicação remota | Painel de build Android | Relato de retorno ao estado inicial sem APK |
-
-## Validação de JavaScript já realizada
-
-```bash
-pnpm check
-pnpm test
+```powershell
+npx --yes pnpm@9.12.0 install --frozen-lockfile
+npx --yes pnpm@9.12.0 check
+npx --yes pnpm@9.12.0 test
+npx --yes pnpm@9.12.0 lint
+npx expo-doctor
 ```
 
-Resultado registrado antes desta transferência: TypeScript aprovado; três testes da lógica de calibração aprovados; um teste de autenticação previamente existente foi ignorado.
+## Prebuild Android
 
-## Compilação Android manual
-
-Com o Android SDK disponível, execute na raiz do projeto:
-
-```bash
-pnpm install
+```powershell
 npx expo prebuild --clean --platform android --no-install
-cd android
-./gradlew assembleDebug
 ```
 
-No Windows, o equivalente do último comando é:
+O projeto usa Continuous Native Generation. As pastas `android` e `ios` são geradas e continuam ignoradas pelo Git.
+
+## Windows sem Android Studio
+
+`build-apk-windows.bat` chama `build-apk-sem-android-studio.ps1`. O roteiro:
+
+1. verifica Node.js 20 ou superior;
+2. baixa Microsoft OpenJDK 17 ZIP para o perfil do usuário, sem instalação administrativa;
+3. baixa Android Command-line Tools e verifica o SHA-256 oficial;
+4. verifica se há 7 GB livres na primeira instalação ou 2 GB nas seguintes;
+5. aceita licenças e instala platform-tools, Android 36, build-tools 35/36 e NDK 27;
+6. remove ZIPs e pastas temporárias depois da extração;
+7. instala dependências pelo pnpm 9.12;
+8. executa prebuild limpo, TypeScript e testes;
+9. cria `android/local.properties` somente depois de a pasta Android existir;
+10. executa `:app:assembleDebug --stacktrace`;
+11. grava um log detalhado em `build-logs`.
+
+Ferramentas locais:
 
 ```text
-android\gradlew.bat assembleDebug
+%LOCALAPPDATA%\DriverTouchPop\tools
+%LOCALAPPDATA%\DriverTouchPop\AndroidSdk
 ```
 
-O arquivo esperado é:
+APK esperada:
 
 ```text
 android\app\build\outputs\apk\debug\app-debug.apk
 ```
 
-Uma APK de variante debug é assinada com chave de depuração e pode ser instalada para testes; para distribuição de release seria necessário um processo de assinatura apropriado [2].
+A configuração atual gera uma APK `arm64-v8a`, adequada a aparelhos Android 64-bit e menor que uma APK universal.
 
-## Roteiro Windows sem Android Studio
+## GitHub Actions
 
-O arquivo `build-apk-windows.bat` inicia `build-apk-sem-android-studio.ps1`. O script tenta instalar Node.js LTS e Java 17 por `winget`, baixa Android Command-line Tools, instala os pacotes SDK pelo `sdkmanager`, cria `android/local.properties`, instala as dependências e chama `gradlew.bat assembleDebug`.
+O workflow `.github/workflows/android-debug.yml` executa as verificações, o prebuild e o Gradle em cada push para `main` ou por acionamento manual. A saída é publicada por 14 dias como o artefato `DriverTouch-Pop-debug`.
 
-Esse atalho foi montado para reduzir passos manuais. Ele ainda não foi executado em Windows real e pode exigir ajustes para permissões, versão do `winget`, política corporativa, antivírus ou alterações de URLs da Google. A próxima pessoa deve solicitar a mensagem completa se o script parar; não deve assumir que a APK foi gerada até encontrar `app-debug.apk` no caminho informado.
+## Teste físico obrigatório
 
-## Teste em aparelho físico
+1. Instalar a APK debug.
+2. Confirmar que DriverTouch Pop aparece em Acessibilidade.
+3. Habilitar o serviço e voltar ao painel.
+4. Confirmar que o aplicativo iniciou desarmado.
+5. Executar calibração guiada.
+6. Armar somente o modo de teste.
+7. Abrir o POP driver com o veículo parado.
+8. Conferir diagnósticos no Registro.
+9. Validar que a mesma tela compatível gera apenas um evento.
+10. Revogar o serviço nas configurações do Android e confirmar o estado no painel.
 
-1. Instalar a APK debug no Android.
-2. Abrir o DriverTouch Pop e calibrar um ponto de teste.
-3. Abrir **Permissões Android** e confirmar que o serviço aparece na lista de Acessibilidade.
-4. Ativar o serviço com o veículo parado.
-5. Manter o modo **Teste** e abrir o POP driver.
-6. Verificar no Registro se há evento compatível; se não houver, revisar marcador e árvore de acessibilidade.
-7. Só avaliar modo assistido depois de confirmar coordenada, marcador e desligamento manual.
-
-## Referências
-
-[1]: https://developer.android.com/tools/sdkmanager "Android Developers — sdkmanager"
-[2]: https://developer.android.com/build/build-for-release "Android Developers — Build your app for release to users"
+O modo assistido só deve ser testado depois dessas dez verificações.

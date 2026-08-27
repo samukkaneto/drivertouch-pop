@@ -1,3 +1,0 @@
-<resources>
-  <string name="popmove_safe_accept_service_description">Serviço local para detectar marcadores configurados no POP driver e executar um toque prolongado calibrado quando o modo assistido estiver habilitado.</string>
-</resources>

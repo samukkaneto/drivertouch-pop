@@ -1,53 +1,68 @@
 # DriverTouch Pop
 
-> Protótipo Android local para configurar e testar um toque prolongado assistido no POP driver, com calibração manual, modo de teste e registro técnico local.
+Auxiliar Android local para reduzir a interação manual do motorista com a tela de ofertas do POP driver. O projeto combina uma interface Expo/React Native com um serviço nativo de acessibilidade em Kotlin.
 
-## Estado da transferência
+## Estado atual
 
-Este repositório foi preparado para continuidade por outro desenvolvedor ou outra IA. A interface React Native está implementada, assim como uma ponte Kotlin e um serviço Android de acessibilidade. A lógica de tela passou em checagem de tipos e em testes unitários. A APK **ainda precisa de validação em um aparelho Android físico**, pois não foi possível concluir a compilação nativa neste ambiente de desenvolvimento por falta do Android SDK local.
+A versão 0.2.0 substitui o protótipo genérico criado na Manus por uma base Android dedicada:
 
-| Área | Estado | Onde consultar |
-| --- | --- | --- |
-| Interface mobile | Implementada | `app/(tabs)/` |
-| Configurações locais | Implementadas com AsyncStorage | `lib/safe-accept-context.tsx` |
-| Serviço Android | Implementado, não validado em aparelho | `modules/my-module/android/` |
-| Testes unitários | 3 testes aprovados | `tests/calibration.test.ts` |
-| Build Android | Prebuild criado; APK pendente | `docs/BUILD_AND_TEST.md` |
-| Relato de falha de publicação | Registrado, ainda sem diagnóstico | `docs/KNOWN_ISSUES.md` |
+- sem login, backend, banco de dados, LLM ou armazenamento em nuvem;
+- inicia sempre desarmada, inclusive após reinício do aplicativo ou reconexão do serviço;
+- mudanças de modo, calibração ou parâmetros desarmam a automação;
+- modo de teste registra diagnósticos sem enviar gestos;
+- modo assistido permite no máximo uma tentativa por aparição contínua do marcador;
+- calibração guiada pode ser feita diretamente sobre o POP driver por uma sobreposição do serviço;
+- eventos do aplicativo e do serviço Kotlin aparecem juntos no registro local;
+- botão de desarme interrompe gestos; a revogação total do serviço continua sob controle do Android.
 
-## O que o aplicativo faz
+O projeto ainda precisa ser validado em um aparelho físico com o POP driver real. O pacote alvo e o marcador textual continuam sendo hipóteses até esse teste.
 
-O aplicativo funciona localmente e não possui login, backend obrigatório ou armazenamento em nuvem. O motorista escolhe o modo, calibra um ponto relativo na tela, define a duração do toque e ativa o serviço de acessibilidade nas configurações do Android. Em **Modo de teste**, o serviço apenas registra uma detecção compatível; ele não envia gesto. Em **Modo assistido**, o serviço procura um marcador textual configurável no POP driver e, se a tela corresponder, envia um toque prolongado ao ponto calibrado.
+## Fluxo seguro de primeiro uso
 
-O Android permite que um `AccessibilityService` receba eventos de janela, recupere conteúdo da janela e envie gestos quando essas capacidades forem declaradas pelo serviço [1]. O uso de APIs de acessibilidade em aplicações distribuídas exige aderência às regras aplicáveis do Android e do Google Play [2].
+1. Gerar e instalar a APK debug.
+2. Habilitar **DriverTouch Pop** nas configurações de Acessibilidade do Android.
+3. Manter o modo **Teste**.
+4. Usar **Calibrar sobre o POP driver** para marcar o centro do controle de aceite.
+5. Abrir uma tela controlada do POP driver, com o veículo parado.
+6. Consultar o Registro para saber se o aplicativo foi detectado e se o marcador apareceu.
+7. Somente considerar o modo assistido depois de confirmar detecção, ponto, duração e desarme.
 
-## Comece por aqui
+## Desenvolvimento
 
-Leia os documentos nesta ordem:
+```powershell
+npx --yes pnpm@9.12.0 install
+npx --yes pnpm@9.12.0 check
+npx --yes pnpm@9.12.0 test
+npx expo-doctor
+npx expo prebuild --clean --platform android --no-install
+```
 
-1. [`docs/HANDOFF.md`](docs/HANDOFF.md) — resumo executivo, escopo e próximos passos.
-2. [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — estrutura, fluxo de dados e integração nativa.
-3. [`docs/BUILD_AND_TEST.md`](docs/BUILD_AND_TEST.md) — como validar e gerar a APK.
-4. [`docs/KNOWN_ISSUES.md`](docs/KNOWN_ISSUES.md) — falhas, riscos e itens não confirmados.
+Para criar uma APK debug no Windows sem Android Studio, execute:
 
-## Comandos de desenvolvimento
+```text
+build-apk-windows.bat
+```
 
-| Objetivo | Comando |
-| --- | --- |
-| Instalar dependências | `pnpm install` |
-| Checar TypeScript | `pnpm check` |
-| Rodar testes | `pnpm test` |
-| Rodar a interface | `pnpm dev` |
-| Gerar arquivos Android | `npx expo prebuild --clean --platform android --no-install` |
-| Compilar debug local | `cd android && ./gradlew assembleDebug` |
+Reserve pelo menos 7 GB livres na primeira execução. O roteiro baixa OpenJDK 17 portátil, Android Command-line Tools e NDK para `%LOCALAPPDATA%\DriverTouchPop`, valida o projeto e gera uma APK para aparelhos Android 64-bit:
 
-No Windows, há também `build-apk-windows.bat`, que chama `build-apk-sem-android-studio.ps1`. Ele foi criado como alternativa sem Android Studio, mas **ainda precisa ser executado e corrigido em um computador Windows real**.
+```text
+android\app\build\outputs\apk\debug\app-debug.apk
+```
 
-## Segurança operacional
+Cada push na `main` também executa a esteira **Android debug APK** no GitHub Actions. Quando ela termina, a APK fica disponível por 14 dias no artefato `DriverTouch-Pop-debug`.
 
-O primeiro teste deve ocorrer com o veículo parado. A calibração depende do tamanho e da interface do aparelho; portanto, o projeto não deve ser considerado pronto para uso real sem validação no POP driver. Não foram recebidos prints suficientes da tela de oferta para confirmar o marcador textual, as coordenadas ideais ou a compatibilidade da árvore de acessibilidade da PopMove.
+## Estrutura principal
 
-## Referências
+| Caminho                               | Responsabilidade                                         |
+| ------------------------------------- | -------------------------------------------------------- |
+| `app/(tabs)/`                         | Painel, calibração, registro, ajustes e permissões       |
+| `lib/safe-accept-context.tsx`         | Estado local, migração segura e persistência             |
+| `lib/safe-accept-bridge.ts`           | Contrato entre React Native e Kotlin                     |
+| `modules/safe-accept/`                | Expo Module e serviço Android                            |
+| `tests/`                              | Testes de calibração, migração e limites de configuração |
+| `.github/workflows/android-debug.yml` | Validação e geração de APK no GitHub Actions             |
+| `docs/`                               | Arquitetura, build e riscos ainda abertos                |
 
-[1]: https://developer.android.com/guide/topics/ui/accessibility/service "Android Developers — Accessibility services"
-[2]: https://support.google.com/googleplay/android-developer/answer/10964491?hl=pt-BR "Google Play — Política da API Accessibility"
+## Limites
+
+Não existe integração oficial com a PopMove. O uso de `AccessibilityService` exige revisão dos termos da plataforma e das regras de distribuição do Android antes de qualquer publicação. A prioridade deste projeto é reduzir distração; ele não deve criar novos riscos nem ser usado sem validação controlada.

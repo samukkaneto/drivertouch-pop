@@ -1,0 +1,3 @@
+<resources>
+  <string name="popmove_safe_accept_service_description">Auxiliar local que detecta o marcador configurado no POP driver e, quando explicitamente armado, executa no máximo um toque calibrado por aparição.</string>
+</resources>
