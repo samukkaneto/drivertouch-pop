@@ -15,3 +15,5 @@
 - [ ] Identificar e remover o pedido inesperado de token no fluxo de geração ou teste do APK
 - [x] Verificar alternativa de compilação da APK sem token de publicação
 - [x] Preparar roteiro Windows para gerar a APK de teste localmente
+- [ ] Corrigir ou obter suporte para a compilação Android que retorna ao estado inicial sem liberar APK
+- [x] Criar atalho Windows que instale somente as ferramentas Android e gere a APK sem Android Studio
