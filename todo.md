@@ -12,3 +12,6 @@
 - [x] Validar tipagem, testes e configuração de build Android
 - [x] Salvar checkpoint e orientar a geração de APK para teste físico
 - [ ] Testar a detecção e a calibração com o POP driver em um aparelho Android físico
+- [ ] Identificar e remover o pedido inesperado de token no fluxo de geração ou teste do APK
+- [x] Verificar alternativa de compilação da APK sem token de publicação
+- [x] Preparar roteiro Windows para gerar a APK de teste localmente
