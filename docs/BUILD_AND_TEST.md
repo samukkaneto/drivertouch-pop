@@ -31,7 +31,7 @@ O projeto usa Continuous Native Generation. As pastas `android` e `ios` são ger
 7. instala dependências pelo pnpm 9.12;
 8. executa prebuild limpo, TypeScript e testes;
 9. cria `android/local.properties` somente depois de a pasta Android existir;
-10. executa `:app:assembleDebug --stacktrace`;
+10. executa `:app:assembleRelease --stacktrace`;
 11. grava um log detalhado em `build-logs`.
 
 Ferramentas locais:
@@ -41,21 +41,21 @@ Ferramentas locais:
 %LOCALAPPDATA%\DriverTouchPop\AndroidSdk
 ```
 
-APK esperada:
+APK independente esperada:
 
 ```text
-android\app\build\outputs\apk\debug\app-debug.apk
+android\app\build\outputs\apk\release\app-release.apk
 ```
 
 A configuração atual gera uma APK `arm64-v8a`, adequada a aparelhos Android 64-bit e menor que uma APK universal.
 
 ## GitHub Actions
 
-O workflow `.github/workflows/android-debug.yml` executa as verificações, o prebuild e o Gradle em cada push para `main` ou por acionamento manual. A saída é publicada por 14 dias como o artefato `DriverTouch-Pop-debug`.
+O workflow `.github/workflows/android-debug.yml` executa as verificações, o prebuild e o Gradle em cada push para `main` ou por acionamento manual. A saída é publicada por 14 dias como o artefato `DriverTouch-Pop-standalone`.
 
 ## Teste físico obrigatório
 
-1. Instalar a APK debug.
+1. Instalar a APK independente.
 2. Confirmar que DriverTouch Pop aparece em Acessibilidade.
 3. Habilitar o serviço e voltar ao painel.
 4. Confirmar que o aplicativo iniciou desarmado.

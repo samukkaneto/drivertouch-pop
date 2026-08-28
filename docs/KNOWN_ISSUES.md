@@ -23,6 +23,7 @@
 | Build falhando antes do prebuild      | `local.properties` agora é criado depois do prebuild               |
 | Computador sem espaço para NDK        | Verificação prévia de espaço e build alternativo no GitHub Actions |
 | Dependências e permissões da Manus    | Backend, OAuth, LLM, áudio, vídeo e notificações removidos         |
+| APK debug tentou conectar ao Metro    | Workflow atualizado para gerar `assembleRelease` com bundle incluso |
 
 ## Limites deliberados
 

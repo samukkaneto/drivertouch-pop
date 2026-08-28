@@ -108,7 +108,7 @@ New-Item -ItemType Directory -Force -Path $LogsRoot | Out-Null
 Start-Transcript -LiteralPath $LogFile -Force | Out-Null
 
 try {
-  Write-Host "DriverTouch Pop - criação local de APK de teste" -ForegroundColor Green
+  Write-Host "DriverTouch Pop - criação local de APK independente" -ForegroundColor Green
   Write-Host "O processo usa somente Node.js, Java 17 e as ferramentas oficiais do Android."
   Write-Host "Log detalhado: $LogFile"
 
@@ -206,18 +206,18 @@ try {
   & npx --yes pnpm@9.12.0 test
   if ($LASTEXITCODE -ne 0) { throw "Os testes automatizados falharam." }
 
-  Write-Step "Compilando a APK debug"
+  Write-Step "Compilando a APK independente"
   Set-Location $androidRoot
   $env:NODE_ENV = "production"
-  & (Join-Path $androidRoot "gradlew.bat") ":app:assembleDebug" "--no-daemon" "--stacktrace"
+  & (Join-Path $androidRoot "gradlew.bat") ":app:assembleRelease" "--no-daemon" "--stacktrace"
   if ($LASTEXITCODE -ne 0) {
     throw "O Gradle não conseguiu criar a APK (código $LASTEXITCODE). Consulte o log acima."
   }
 
-  $apkFolder = Join-Path $androidRoot "app\build\outputs\apk\debug"
-  $apkFile = Join-Path $apkFolder "app-debug.apk"
+  $apkFolder = Join-Path $androidRoot "app\build\outputs\apk\release"
+  $apkFile = Join-Path $apkFolder "app-release.apk"
   if (-not (Test-Path -LiteralPath $apkFile)) {
-    throw "O Gradle terminou, mas app-debug.apk não foi localizado."
+    throw "O Gradle terminou, mas app-release.apk não foi localizado."
   }
 
   Write-Host ""

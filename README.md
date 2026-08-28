@@ -19,7 +19,7 @@ O projeto ainda precisa ser validado em um aparelho físico com o POP driver rea
 
 ## Fluxo seguro de primeiro uso
 
-1. Gerar e instalar a APK debug.
+1. Gerar e instalar a APK independente.
 2. Habilitar **DriverTouch Pop** nas configurações de Acessibilidade do Android.
 3. Manter o modo **Teste**.
 4. Usar **Calibrar sobre o POP driver** para marcar o centro do controle de aceite.
@@ -37,7 +37,7 @@ npx expo-doctor
 npx expo prebuild --clean --platform android --no-install
 ```
 
-Para criar uma APK debug no Windows sem Android Studio, execute:
+Para criar uma APK independente no Windows sem Android Studio, execute:
 
 ```text
 build-apk-windows.bat
@@ -46,10 +46,10 @@ build-apk-windows.bat
 Reserve pelo menos 7 GB livres na primeira execução. O roteiro baixa OpenJDK 17 portátil, Android Command-line Tools e NDK para `%LOCALAPPDATA%\DriverTouchPop`, valida o projeto e gera uma APK para aparelhos Android 64-bit:
 
 ```text
-android\app\build\outputs\apk\debug\app-debug.apk
+android\app\build\outputs\apk\release\app-release.apk
 ```
 
-Cada push na `main` também executa a esteira **Android debug APK** no GitHub Actions. Quando ela termina, a APK fica disponível por 14 dias no artefato `DriverTouch-Pop-debug`.
+Cada push na `main` executa a esteira **Android standalone APK** no GitHub Actions. Quando ela termina, a APK com o bundle JavaScript incluído fica disponível por 14 dias no artefato `DriverTouch-Pop-standalone`.
 
 ## Estrutura principal
 
