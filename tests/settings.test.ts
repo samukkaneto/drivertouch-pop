@@ -23,7 +23,7 @@ describe("settings migration and safety", () => {
 
     expect(settings.longPressDurationMs).toBe(500);
     expect(settings.detectionDelayMs).toBe(3000);
-    expect(settings.acceptMarker).toBe("aceitar");
+    expect(settings.acceptMarker).toBe("pressione e segure para atender");
   });
 
   it("migrates old app events with an explicit source", () => {
@@ -41,5 +41,20 @@ describe("settings migration and safety", () => {
     expect(settings.events).toEqual([
       expect.objectContaining({ id: "old", source: "app" }),
     ]);
+  });
+
+  it("migrates a calibrated legacy test configuration to real execution", () => {
+    const settings = sanitizeSettings({
+      mode: "test",
+      isArmed: false,
+      calibration: {
+        x: 0.5,
+        y: 0.3,
+        updatedAt: "2026-08-28T07:21:00.000Z",
+      },
+    });
+
+    expect(settings.mode).toBe("assist");
+    expect(settings.isArmed).toBe(true);
   });
 });

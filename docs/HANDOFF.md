@@ -1,35 +1,24 @@
 # Continuidade do projeto
 
-Este documento registra a reconstrução iniciada na versão 0.2.0.
+## Objetivo
 
-## Objetivo preservado
+Aceitar automaticamente ofertas do POP driver para reduzir a interação do motorista com o telefone, inclusive quando uma nova viagem chega durante outra em andamento.
 
-Reduzir a distração do motorista ao lidar com ofertas no POP driver, mantendo controle explícito, operação local e preferência por falhas seguras.
+## Evidência real incorporada
 
-## O que foi substituído
-
-A base genérica da Manus continha servidor Express, banco MySQL/Drizzle, OAuth, APIs de LLM, áudio, vídeo, notificações e telas de demonstração que não participavam do produto. Esses elementos foram removidos. O projeto agora contém apenas a interface do DriverTouch, a persistência local, o módulo Expo Android e testes relacionados.
+Capturas de 28/08/2026 confirmaram que não há botão de aceite. A tela ociosa mostra `Aguarde uma solicitação`; o heads-up mostra `Você tem uma nova viagem próxima`; a oferta vira um cartão com `PRESSIONE E SEGURE PARA ATENDER`.
 
 ## Decisões atuais
 
-- Produto Android dedicado; não altera o APK da PopMove.
-- Sem conta, backend ou telemetria.
-- `AccessibilityService` filtrado pelo pacote do POP driver.
-- Calibração primária por sobreposição do próprio serviço.
-- Detecção textual configurável com diagnóstico sem conteúdo sensível.
-- No máximo uma tentativa por aparição.
-- Toda sessão e reconexão começa desarmada.
-- Revogação da permissão continua no Android.
-- APK de teste `arm64-v8a`, com build reproduzível no Windows e no GitHub Actions.
+- Execução real, sem modo de teste.
+- Pacote oficial `br.com.popmove.driver` confirmado na Play Store e nas capturas.
+- Notificação abre o POP driver e cria a identidade da oferta.
+- Marcador acessível direciona o gesto automaticamente.
+- Calibração preservada funciona como fallback quando o texto não aparece na árvore.
+- Uma identidade gera no máximo um gesto em dois minutos.
+- Configuração calibrada permanece ativa entre reinícios.
+- Sem backend, login próprio, telemetria ou armazenamento do conteúdo da corrida.
 
-## Validação da reconstrução
+## Entrega
 
-- TypeScript, lint e 8 testes automatizados aprovados.
-- Expo Doctor aprovou 18 de 18 verificações.
-- Prebuild Android e autolinking do módulo `safe-accept` aprovados.
-- Kotlin do módulo `safe-accept` compilado com sucesso usando Android 36, Kotlin 2.1.20 e NDK 27.
-- O empacotamento local completo encontrou falta de espaço no computador; a esteira hospedada gera e publica a APK sem depender desse limite.
-
-## Próxima evidência necessária
-
-Depois da validação automatizada e da criação de uma APK, o único bloqueio legítimo será o aparelho físico. O teste deve confirmar pacote, árvore acessível, marcador, coordenada, duração e comportamento da sobreposição. Prints anonimizados só serão solicitados se o modo de teste demonstrar que a árvore não fornece informação suficiente.
+A versão 0.4.0 substitui a hipótese `aceitar`, remove teste/assistido da interface e implementa a sequência real notificação → cartão → toque prolongado. A esteira do GitHub é a fonte de validação de TypeScript, testes, lint, prebuild, Kotlin/Gradle, assinatura e APK.

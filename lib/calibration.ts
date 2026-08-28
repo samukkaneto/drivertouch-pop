@@ -41,25 +41,16 @@ export function getReadiness(settings: SafeAcceptSettings) {
 
   if (!settings.isArmed || settings.mode === "off") {
     return {
-      label: "Automação desarmada",
-      detail: "Nenhum gesto será enviado até você armar o modo escolhido.",
+      label: "Execução desligada",
+      detail: "Nenhuma corrida será aceita enquanto a execução estiver desligada.",
       tone: "ready" as const,
     };
   }
 
-  if (settings.mode === "test") {
-    return {
-      label: "Modo de teste ativo",
-      detail:
-        "A primeira aparição compatível será registrada, sem enviar gesto.",
-      tone: "test" as const,
-    };
-  }
-
   return {
-    label: "Modo assistido armado",
+    label: "Execução automática ativa",
     detail:
-      "No máximo um gesto será tentado por aparição compatível da oferta.",
+      "Uma oferta real dispara um único toque prolongado no cartão da viagem.",
     tone: "active" as const,
   };
 }

@@ -1,68 +1,54 @@
 # DriverTouch Pop
 
-Auxiliar Android local para reduzir a interação manual do motorista com a tela de ofertas do POP driver. O projeto combina uma interface Expo/React Native com um serviço nativo de acessibilidade em Kotlin.
+Aplicativo Android local que aceita automaticamente novas viagens no **POP driver** para reduzir a interação manual do motorista.
 
-## Estado atual
+## Estado atual — versão 0.4.0
 
-A versão 0.3.0 substitui o protótipo genérico criado na Manus por uma base Android dedicada e acrescenta diagnóstico opcional de notificações com rolagem limitada:
+O fluxo foi alinhado com capturas reais do POP driver feitas em 28/08/2026:
 
-- sem login, backend, banco de dados, LLM ou armazenamento em nuvem;
-- inicia sempre desarmada, inclusive após reinício do aplicativo ou reconexão do serviço;
-- mudanças de modo, calibração ou parâmetros desarmam a automação;
-- modo de teste registra diagnósticos sem enviar gestos;
-- modo assistido permite no máximo uma tentativa por aparição contínua do marcador;
-- calibração guiada pode ser feita diretamente sobre o POP driver por uma sobreposição do serviço;
-- eventos do aplicativo e do serviço Kotlin aparecem juntos no registro local;
-- botão de desarme interrompe gestos; a revogação total do serviço continua sob controle do Android.
+| Sinal | Evidência confirmada |
+| --- | --- |
+| Pacote Android | `br.com.popmove.driver` |
+| Notificação de oferta | `Você tem uma nova viagem próxima` |
+| Cartão de corrida | `PRESSIONE E SEGURE PARA ATENDER` |
+| Ação de aceite | Toque prolongado em qualquer ponto do cartão; não existe botão de aceite |
 
-O projeto ainda precisa ser validado em um aparelho físico com o POP driver real. O pacote alvo e o marcador textual continuam sendo hipóteses até esse teste.
+Não existe modo de teste. Depois que há calibração e a execução está ligada, o serviço permanece ativo entre reinícios até o motorista usar **Desligar execução automática** ou revogar a permissão no Android.
 
-## Fluxo seguro de primeiro uso
+## Como a execução funciona
 
-1. Gerar e instalar a APK independente.
-2. Habilitar **DriverTouch Pop** nas configurações de Acessibilidade do Android.
-3. Manter o modo **Teste**.
-4. Usar **Calibrar sobre o POP driver** para marcar o centro do controle de aceite.
-5. Abrir uma tela controlada do POP driver, com o veículo parado.
-6. Consultar o Registro para saber se o aplicativo foi detectado e se o marcador apareceu.
-7. Somente considerar o modo assistido depois de confirmar detecção, ponto, duração e desarme.
+1. O listener recebe somente notificações do pacote oficial do POP driver.
+2. A frase real da notificação cria uma identidade local da viagem sem salvar endereço ou texto.
+3. O `contentIntent` da notificação abre o POP driver, inclusive quando chega uma oferta durante outra corrida.
+4. O serviço procura `PRESSIONE E SEGURE PARA ATENDER` na árvore de acessibilidade.
+5. Quando o texto está acessível, o centro do próprio elemento define o ponto do toque.
+6. Quando o texto não está acessível, a notificação confirmada autoriza o ponto já calibrado após cinco segundos, sempre com a janela do POP driver em primeiro plano.
+7. A identidade da notificação ou do cartão impede repetir o gesto na mesma oferta.
 
-## Desenvolvimento
+## Instalação
 
-```powershell
-npx --yes pnpm@9.12.0 install
-npx --yes pnpm@9.12.0 check
-npx --yes pnpm@9.12.0 test
-npx expo-doctor
-npx expo prebuild --clean --platform android --no-install
-```
+1. Instale a APK independente `arm64-v8a`.
+2. Habilite **DriverTouch Pop** em Acessibilidade.
+3. Habilite **DriverTouch Pop - Notificações** no acesso a notificações.
+4. Preserve a calibração existente ou marque um ponto dentro do cartão da viagem.
+5. Deixe **Aceitar corridas automaticamente** ligado.
 
-Para criar uma APK independente no Windows sem Android Studio, execute:
+## Build
 
 ```text
 build-apk-windows.bat
 ```
 
-Reserve pelo menos 7 GB livres na primeira execução. O roteiro baixa OpenJDK 17 portátil, Android Command-line Tools e NDK para `%LOCALAPPDATA%\DriverTouchPop`, valida o projeto e gera uma APK para aparelhos Android 64-bit:
+O script usa Java 17 portátil e Android Command-line Tools. A esteira `.github/workflows/android-debug.yml` também executa TypeScript, testes, lint, prebuild, Gradle release e publica a APK independente.
 
-```text
-android\app\build\outputs\apk\release\app-release.apk
-```
+## Estrutura
 
-Cada push na `main` executa a esteira **Android standalone APK** no GitHub Actions. Quando ela termina, a APK com o bundle JavaScript incluído fica disponível por 14 dias no artefato `DriverTouch-Pop-standalone`.
+| Caminho | Responsabilidade |
+| --- | --- |
+| `app/(tabs)/` | Painel, calibração, permissões, ajustes e registro |
+| `lib/` | Configuração local, migração e ponte TypeScript |
+| `modules/safe-accept/android/` | Listener de notificações, Acessibilidade e gesto Kotlin |
+| `docs/REAL_OFFER_FLOW.md` | Fluxo derivado das capturas reais |
+| `tests/` | Migração, calibração e estado de execução |
 
-## Estrutura principal
-
-| Caminho                               | Responsabilidade                                         |
-| ------------------------------------- | -------------------------------------------------------- |
-| `app/(tabs)/`                         | Painel, calibração, registro, ajustes e permissões       |
-| `lib/safe-accept-context.tsx`         | Estado local, migração segura e persistência             |
-| `lib/safe-accept-bridge.ts`           | Contrato entre React Native e Kotlin                     |
-| `modules/safe-accept/`                | Expo Module e serviço Android                            |
-| `tests/`                              | Testes de calibração, migração e limites de configuração |
-| `.github/workflows/android-debug.yml` | Validação e geração de APK no GitHub Actions             |
-| `docs/`                               | Arquitetura, build e riscos ainda abertos                |
-
-## Limites
-
-Não existe integração oficial com a PopMove. O uso de `AccessibilityService` exige revisão dos termos da plataforma e das regras de distribuição do Android antes de qualquer publicação. A prioridade deste projeto é reduzir distração; ele não deve criar novos riscos nem ser usado sem validação controlada.
+O projeto não modifica o APK da PopMove, não usa backend e não envia dados de corrida para servidor.

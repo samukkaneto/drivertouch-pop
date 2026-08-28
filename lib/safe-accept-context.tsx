@@ -71,11 +71,12 @@ export function SafeAcceptProvider({
         const restored = sanitizeSettings(JSON.parse(stored));
         setSettings({
           ...restored,
-          isArmed: false,
           events: [
             createEvent(
               "system",
-              "Aplicativo iniciado com a automação desarmada por segurança.",
+              restored.isArmed
+                ? "Aplicativo iniciado com execução automática ativa."
+                : "Aplicativo iniciado com execução automática desligada.",
             ),
             ...restored.events,
           ].slice(0, MAX_EVENTS),
@@ -111,15 +112,13 @@ export function SafeAcceptProvider({
     setSettings((current) => ({
       ...current,
       mode,
-      isArmed: false,
+      isArmed: Boolean(current.calibration && mode === "assist"),
       events: [
         createEvent(
           "config",
           mode === "off"
-            ? "Modo desligado selecionado."
-            : mode === "test"
-              ? "Modo de teste selecionado."
-              : "Modo assistido selecionado.",
+            ? "Execução automática desligada."
+            : "Execução automática ativada.",
         ),
         ...current.events,
       ].slice(0, MAX_EVENTS),
@@ -128,18 +127,17 @@ export function SafeAcceptProvider({
 
   const setArmed = useCallback((armed: boolean) => {
     setSettings((current) => {
-      const nextArmed = Boolean(
-        current.calibration && current.mode !== "off" && armed,
-      );
+      const nextArmed = Boolean(current.calibration && armed);
       return {
         ...current,
+        mode: nextArmed ? "assist" : "off",
         isArmed: nextArmed,
         events: [
           createEvent(
             "system",
             nextArmed
-              ? `Automação armada no modo ${current.mode === "test" ? "de teste" : "assistido"}.`
-              : "Automação desarmada.",
+              ? "Execução automática ativada."
+              : "Execução automática desligada.",
           ),
           ...current.events,
         ].slice(0, MAX_EVENTS),
@@ -156,7 +154,8 @@ export function SafeAcceptProvider({
     setSettings((current) => ({
       ...current,
       calibration,
-      isArmed: false,
+      mode: "assist",
+      isArmed: true,
       events: [
         createEvent("config", "Ponto de toque calibrado no aparelho."),
         ...current.events,
@@ -171,7 +170,7 @@ export function SafeAcceptProvider({
         "longPressDurationMs" | "detectionDelayMs" | "acceptMarker"
       >,
     ) => {
-      setSettings((current) => ({ ...current, ...values, isArmed: false }));
+      setSettings((current) => ({ ...current, ...values }));
     },
     [],
   );

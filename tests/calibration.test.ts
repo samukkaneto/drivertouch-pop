@@ -28,15 +28,15 @@ describe("calibration helpers", () => {
     expect(getReadiness(DEFAULT_SETTINGS).label).toBe("Calibração pendente");
   });
 
-  it("reports test mode without claiming a gesture will be sent", () => {
+  it("reports automatic execution when a calibrated setup is active", () => {
     const readiness = getReadiness({
       ...DEFAULT_SETTINGS,
-      calibration: { x: 0.5, y: 0.7, updatedAt: "2026-08-26T00:00:00.000Z" },
+      calibration: { x: 0.5, y: 0.3, updatedAt: "2026-08-28T07:21:00.000Z" },
       isArmed: true,
-      mode: "test",
+      mode: "assist",
     });
-    expect(readiness.label).toBe("Modo de teste ativo");
-    expect(readiness.detail).toContain("sem enviar gesto");
+    expect(readiness.label).toBe("Execução automática ativa");
+    expect(readiness.detail).toContain("toque prolongado");
   });
 
   it("parses decimal comma and rejects coordinates outside the screen", () => {

@@ -91,7 +91,7 @@ export default function LogScreen() {
             <MaterialIcons name="history" size={28} color="#98A2B3" />
             <Text style={styles.emptyTitle}>Ainda não há eventos</Text>
             <Text style={styles.emptyText}>
-              As ações de configuração e os testes do serviço aparecerão nesta
+              As ações de configuração, detecção e execução aparecerão nesta
               lista.
             </Text>
           </View>

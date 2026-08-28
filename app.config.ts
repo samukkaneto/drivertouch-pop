@@ -3,14 +3,14 @@ import type { ExpoConfig } from "expo/config";
 const config: ExpoConfig = {
   name: "DriverTouch Pop",
   slug: "drivertouch-pop",
-  version: "0.3.0",
+  version: "0.4.0",
   orientation: "portrait",
   icon: "./assets/images/icon.png",
   scheme: "drivertouchpop",
   newArchEnabled: false,
   android: {
     package: "com.drivertouch.pop",
-    versionCode: 3,
+    versionCode: 4,
     adaptiveIcon: {
       backgroundColor: "#155EEF",
       foregroundImage: "./assets/images/android-icon-foreground.png",

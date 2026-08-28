@@ -42,4 +42,4 @@ Os arquivos `.log` são ignorados pelo Git e podem ser enviados para diagnóstic
 
 ## Primeiro teste
 
-Instale a APK apenas em um Android de teste. Ative DriverTouch Pop em Acessibilidade, mantenha o modo **Teste** e faça a calibração guiada com o veículo parado. Não use o modo assistido antes de conferir o Registro.
+Instale a APK no aparelho do motorista, habilite Acessibilidade e acesso às notificações e preserve a calibração dentro do cartão da viagem. O painel deve indicar **Execução automática ativa**.

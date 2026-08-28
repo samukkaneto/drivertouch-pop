@@ -1,69 +1,33 @@
-# Build e validação
+# Build e verificação
 
-## Verificações de código
+## Verificações automatizadas
 
-```powershell
-npx --yes pnpm@9.12.0 install --frozen-lockfile
-npx --yes pnpm@9.12.0 check
-npx --yes pnpm@9.12.0 test
-npx --yes pnpm@9.12.0 lint
-npx expo-doctor
-```
-
-## Prebuild Android
-
-```powershell
+```bash
+pnpm install --frozen-lockfile
+pnpm check
+pnpm test
+pnpm lint
 npx expo prebuild --clean --platform android --no-install
+cd android
+./gradlew :app:assembleRelease --no-daemon --stacktrace
 ```
 
-O projeto usa Continuous Native Generation. As pastas `android` e `ios` são geradas e continuam ignoradas pelo Git.
+O workflow `.github/workflows/android-debug.yml` executa esses passos a cada push na `main` e publica `DriverTouch-Pop-standalone` por 14 dias.
 
 ## Windows sem Android Studio
 
-`build-apk-windows.bat` chama `build-apk-sem-android-studio.ps1`. O roteiro:
-
-1. verifica Node.js 20 ou superior;
-2. baixa Microsoft OpenJDK 17 ZIP para o perfil do usuário, sem instalação administrativa;
-3. baixa Android Command-line Tools e verifica o SHA-256 oficial;
-4. verifica se há 7 GB livres na primeira instalação ou 2 GB nas seguintes;
-5. aceita licenças e instala platform-tools, Android 36, build-tools 35/36 e NDK 27;
-6. remove ZIPs e pastas temporárias depois da extração;
-7. instala dependências pelo pnpm 9.12;
-8. executa prebuild limpo, TypeScript e testes;
-9. cria `android/local.properties` somente depois de a pasta Android existir;
-10. executa `:app:assembleRelease --stacktrace`;
-11. grava um log detalhado em `build-logs`.
-
-Ferramentas locais:
-
-```text
-%LOCALAPPDATA%\DriverTouchPop\tools
-%LOCALAPPDATA%\DriverTouchPop\AndroidSdk
-```
-
-APK independente esperada:
+Execute `build-apk-windows.bat`. O roteiro instala ferramentas portáteis em `%LOCALAPPDATA%\DriverTouchPop` e gera:
 
 ```text
 android\app\build\outputs\apk\release\app-release.apk
 ```
 
-A configuração atual gera uma APK `arm64-v8a`, adequada a aparelhos Android 64-bit e menor que uma APK universal.
+## Verificação operacional no aparelho
 
-## GitHub Actions
+1. Instalar a versão mais recente sobre a anterior para preservar a calibração.
+2. Confirmar Acessibilidade e acesso às notificações habilitados.
+3. Confirmar no painel `Execução automática ativa`.
+4. Deixar o POP driver online.
+5. Ao surgir uma oferta, o Registro deve mostrar: notificação reconhecida, PopDriver aberto, oferta/cartão localizado ou fallback calibrado e toque concluído.
 
-O workflow `.github/workflows/android-debug.yml` executa as verificações, o prebuild e o Gradle em cada push para `main` ou por acionamento manual. A saída é publicada por 14 dias como o artefato `DriverTouch-Pop-standalone`.
-
-## Teste físico obrigatório
-
-1. Instalar a APK independente.
-2. Confirmar que DriverTouch Pop aparece em Acessibilidade.
-3. Habilitar o serviço e voltar ao painel.
-4. Confirmar que o aplicativo iniciou desarmado.
-5. Executar calibração guiada.
-6. Armar somente o modo de teste.
-7. Abrir o POP driver com o veículo parado.
-8. Conferir diagnósticos no Registro.
-9. Validar que a mesma tela compatível gera apenas um evento.
-10. Revogar o serviço nas configurações do Android e confirmar o estado no painel.
-
-O modo assistido só deve ser testado depois dessas dez verificações.
+O sucesso do Gradle prova que o código compila e a APK é instalável. A confirmação de que o POP driver efetivamente mudou para o estado de corrida aceita só existe no aparelho autenticado, pois esse estado pertence ao serviço externo da PopMove.

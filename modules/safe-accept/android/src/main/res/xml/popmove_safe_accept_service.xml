@@ -4,6 +4,7 @@
   android:accessibilityFeedbackType="feedbackGeneric"
   android:notificationTimeout="120"
   android:packageNames="br.com.popmove.driver"
+  android:accessibilityFlags="flagIncludeNotImportantViews|flagReportViewIds|flagRetrieveInteractiveWindows"
   android:canRetrieveWindowContent="true"
   android:canPerformGestures="true"
   android:description="@string/popmove_safe_accept_service_description" />

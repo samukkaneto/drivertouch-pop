@@ -6,7 +6,10 @@ import android.content.Intent
 import android.graphics.Color
 import android.graphics.Path
 import android.graphics.PixelFormat
+import android.graphics.Rect
 import android.graphics.drawable.GradientDrawable
+import android.os.Handler
+import android.os.Looper
 import android.view.Gravity
 import android.view.MotionEvent
 import android.view.View
@@ -17,23 +20,33 @@ import android.widget.Button
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
-import java.util.Locale
+import java.security.MessageDigest
+import java.text.Normalizer
 
 class PopMoveAccessibilityService : AccessibilityService() {
   private var lastGestureAt = 0L
-  private var lastDiagnosticAt = 0L
-  private var offerVisible = false
+  private val offerHandler = Handler(Looper.getMainLooper())
   private var overlayView: View? = null
+
+  private data class ScreenSnapshot(
+    val markerVisible: Boolean,
+    val markerCenterX: Float?,
+    val markerCenterY: Float?,
+    val fingerprint: String
+  )
 
   override fun onServiceConnected() {
     serviceIsEnabled = true
     currentInstance = this
-    offerVisible = false
-    SafeAcceptStore.disarmOnServiceStart(this)
+    val config = SafeAcceptStore.load(this)
     SafeAcceptStore.record(
       this,
       "system",
-      "Serviço conectado com a automação desarmada por segurança"
+      if (config.armed) {
+        "Serviço conectado com execução automática ativa"
+      } else {
+        "Serviço conectado; execução automática desligada"
+      }
     )
   }
 
@@ -46,87 +59,70 @@ class PopMoveAccessibilityService : AccessibilityService() {
       return
     }
 
-    val config = SafeAcceptStore.load(this)
-    if (!config.armed || config.mode == "off") {
-      offerVisible = false
-      return
-    }
-    if (
-      config.x !in 0f..1f ||
-      config.y !in 0f..1f ||
-      config.acceptMarker.length < 2
-    ) {
-      return
-    }
-
-    val root = rootInActiveWindow
-    if (root == null) {
-      recordTestDiagnostic(config, "POP driver detectado, mas o Android não forneceu a árvore acessível")
-      return
-    }
-    val markerVisible = containsMarker(root, config.acceptMarker)
-    if (!markerVisible) {
-      offerVisible = false
-      if (
-        config.mode == "assist" &&
-        SafeAcceptStore.claimOfferScroll(this)
-      ) {
-        val scrolled = scrollFirstScrollable(root)
-        SafeAcceptStore.record(
-          this,
-          "gesture",
-          if (scrolled) "Rolagem única solicitada após notificação compatível" else "Nenhum contêiner rolável encontrado após notificação"
-        )
-      } else {
-        recordTestDiagnostic(
-          config,
-          "POP driver detectado; o marcador configurado não apareceu na árvore acessível"
-        )
-      }
-      root.recycle()
-      return
-    }
-    root.recycle()
-    if (offerVisible) return
-    offerVisible = true
-
-    if (config.mode == "test") {
-      SafeAcceptStore.record(
-        this,
-        "test",
-        "Oferta compatível detectada no modo de teste"
-      )
-      return
-    }
-    if (config.mode != "assist") return
-
-    val now = System.currentTimeMillis()
-    val minimumInterval =
-      config.longPressDurationMs + config.detectionDelayMs + 2500L
-    if (now - lastGestureAt < minimumInterval) return
-    lastGestureAt = now
-    dispatchLongPress(config)
+    evaluateActiveWindow()
   }
 
   override fun onInterrupt() {
-    offerVisible = false
     removeOverlay()
-    SafeAcceptStore.disarmOnServiceStart(this)
     SafeAcceptStore.record(this, "system", "Serviço interrompido pelo Android")
   }
 
   override fun onDestroy() {
     serviceIsEnabled = false
-    offerVisible = false
+    offerHandler.removeCallbacksAndMessages(null)
     removeOverlay()
     if (currentInstance === this) currentInstance = null
     super.onDestroy()
   }
 
-  private fun dispatchLongPress(config: SafeAcceptConfig) {
+  private fun evaluateActiveWindow(allowNotificationFallback: Boolean = false) {
+    val config = SafeAcceptStore.load(this)
+    if (!config.armed || config.mode == "off") return
+    if (config.x !in 0f..1f || config.y !in 0f..1f) return
+
+    val root = rootInActiveWindow ?: return
+    if (root.packageName?.toString() != POP_DRIVER_PACKAGE) {
+      root.recycle()
+      return
+    }
+
+    val snapshot = try {
+      buildScreenSnapshot(root, config.acceptMarker)
+    } finally {
+      root.recycle()
+    }
+    val notificationFingerprint = SafeAcceptStore.currentOfferNotificationFingerprint(this)
+    if (!snapshot.markerVisible && !(allowNotificationFallback && notificationFingerprint != null)) {
+      return
+    }
+
+    val now = System.currentTimeMillis()
+    val minimumInterval = config.longPressDurationMs + config.detectionDelayMs + 1_000L
+    if (now - lastGestureAt < minimumInterval) return
+
+    val identity = notificationFingerprint?.let { "notification:$it" }
+      ?: "screen:${snapshot.fingerprint}"
+    if (!SafeAcceptStore.claimOfferIdentity(this, identity)) return
+
     val displayMetrics = resources.displayMetrics
-    val x = config.x * displayMetrics.widthPixels
-    val y = config.y * displayMetrics.heightPixels
+    val x = snapshot.markerCenterX ?: config.x * displayMetrics.widthPixels
+    val y = snapshot.markerCenterY ?: config.y * displayMetrics.heightPixels
+    lastGestureAt = now
+    SafeAcceptStore.record(
+      this,
+      "gesture",
+      if (snapshot.markerVisible && snapshot.markerCenterX != null) {
+        "Oferta real localizada; toque longo direcionado pelo cartão"
+      } else if (snapshot.markerVisible) {
+        "Oferta real localizada; toque longo direcionado pela calibração"
+      } else {
+        "Notificação real confirmada; toque longo direcionado pela calibração"
+      }
+    )
+    dispatchLongPress(config, x, y)
+  }
+
+  private fun dispatchLongPress(config: SafeAcceptConfig, x: Float, y: Float) {
     val path = Path().apply { moveTo(x, y) }
     val stroke = GestureDescription.StrokeDescription(
       path,
@@ -142,7 +138,7 @@ class PopMoveAccessibilityService : AccessibilityService() {
           SafeAcceptStore.record(
             this@PopMoveAccessibilityService,
             "gesture",
-            "Toque prolongado enviado ao POP driver"
+            "Toque prolongado concluído no cartão da viagem"
           )
         }
 
@@ -166,48 +162,77 @@ class PopMoveAccessibilityService : AccessibilityService() {
     }
   }
 
-  private fun recordTestDiagnostic(config: SafeAcceptConfig, message: String) {
-    if (config.mode != "test") return
-    val now = System.currentTimeMillis()
-    if (now - lastDiagnosticAt < 10_000L) return
-    lastDiagnosticAt = now
-    SafeAcceptStore.record(this, "test", message)
-  }
+  private fun buildScreenSnapshot(
+    root: AccessibilityNodeInfo,
+    configuredMarker: String
+  ): ScreenSnapshot {
+    val texts = mutableListOf<String>()
+    var markerBounds: Rect? = null
+    val markers = listOf(
+      configuredMarker,
+      OFFER_SCREEN_MARKER,
+      "segure para atender",
+      "pressione e segure"
+    ).map(::normalize).filter { it.length >= 4 }
 
-  private fun scrollFirstScrollable(node: AccessibilityNodeInfo): Boolean {
-    if (node.isScrollable && node.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD)) {
-      return true
-    }
+    fun visit(node: AccessibilityNodeInfo) {
+      val nodeTexts = listOf(node.text, node.contentDescription)
+        .filterNotNull()
+        .map { normalize(it.toString()) }
+        .filter(String::isNotBlank)
 
-    for (index in 0 until node.childCount) {
-      val child = node.getChild(index) ?: continue
-      try {
-        if (scrollFirstScrollable(child)) return true
-      } finally {
-        child.recycle()
+      for (text in nodeTexts) {
+        texts.add(text)
+        if (markerBounds == null && markers.any(text::contains)) {
+          val bounds = Rect()
+          node.getBoundsInScreen(bounds)
+          if (!bounds.isEmpty) markerBounds = bounds
+        }
+      }
+
+      for (index in 0 until node.childCount) {
+        val child = node.getChild(index) ?: continue
+        try {
+          visit(child)
+        } finally {
+          child.recycle()
+        }
       }
     }
-    return false
+
+    visit(root)
+    val joinedText = texts.joinToString(" ")
+    val markerVisible = markers.any(joinedText::contains)
+    val stableText = texts.distinct().sorted().joinToString("|")
+    val bounds = markerBounds
+    return ScreenSnapshot(
+      markerVisible = markerVisible,
+      markerCenterX = bounds?.exactCenterX(),
+      markerCenterY = bounds?.exactCenterY(),
+      fingerprint = sha256(stableText)
+    )
   }
 
-  private fun containsMarker(
-    node: AccessibilityNodeInfo,
-    marker: String
-  ): Boolean {
-    val visibleText =
-      "${node.text ?: ""} ${node.contentDescription ?: ""}"
-        .lowercase(Locale.ROOT)
-    if (visibleText.contains(marker)) return true
-
-    for (index in 0 until node.childCount) {
-      val child = node.getChild(index) ?: continue
-      try {
-        if (containsMarker(child, marker)) return true
-      } finally {
-        child.recycle()
-      }
+  private fun scheduleOfferChecks() {
+    longArrayOf(100L, 350L, 750L, 1_300L, 2_200L, 3_500L).forEach { delay ->
+      offerHandler.postDelayed({ evaluateActiveWindow() }, delay)
     }
-    return false
+    offerHandler.postDelayed({ evaluateActiveWindow(allowNotificationFallback = true) }, 5_000L)
+  }
+
+  private fun sha256(value: String): String {
+    return MessageDigest.getInstance("SHA-256")
+      .digest(value.toByteArray(Charsets.UTF_8))
+      .take(12)
+      .joinToString("") { byte -> "%02x".format(byte) }
+  }
+
+  private fun normalize(value: String): String {
+    return Normalizer.normalize(value, Normalizer.Form.NFD)
+      .replace(Regex("\\p{M}+"), "")
+      .lowercase()
+      .replace(Regex("\\s+"), " ")
+      .trim()
   }
 
   private fun beginCalibrationOverlay(): Boolean {
@@ -294,7 +319,7 @@ class PopMoveAccessibilityService : AccessibilityService() {
       isClickable = true
     }
     val instruction = TextView(this).apply {
-      text = "Toque no centro exato do botão de aceite"
+      text = "Toque em qualquer ponto seguro dentro do cartão da viagem"
       gravity = Gravity.CENTER
       setTextColor(Color.WHITE)
       setBackgroundColor(Color.rgb(16, 24, 40))
@@ -360,6 +385,7 @@ class PopMoveAccessibilityService : AccessibilityService() {
 
   companion object {
     const val POP_DRIVER_PACKAGE = "br.com.popmove.driver"
+    const val OFFER_SCREEN_MARKER = "pressione e segure para atender"
 
     @Volatile
     private var currentInstance: PopMoveAccessibilityService? = null
@@ -370,6 +396,10 @@ class PopMoveAccessibilityService : AccessibilityService() {
 
     fun beginOverlayCalibration(): Boolean {
       return currentInstance?.beginCalibrationOverlay() ?: false
+    }
+
+    fun onOfferNotification() {
+      currentInstance?.scheduleOfferChecks()
     }
   }
 }

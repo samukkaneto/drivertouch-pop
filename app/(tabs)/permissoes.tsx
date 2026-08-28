@@ -37,17 +37,17 @@ export default function PermissionsScreen() {
       showsVerticalScrollIndicator={false}
     >
       <View style={styles.header}>
-        <Text style={styles.title}>Permissão de acessibilidade</Text>
+        <Text style={styles.title}>Permissões de execução</Text>
         <Text style={styles.subtitle}>
-          O Android é o único responsável por habilitar ou revogar o serviço. O
-          DriverTouch apenas arma ou desarma os gestos.
+          Acessibilidade executa o toque no cartão. Notificações identificam e
+          abrem uma nova viagem, inclusive durante outra corrida.
         </Text>
       </View>
       <SectionCard title="Estado atual">
         <KeyValue
           label="Integração Android"
           value={
-            moduleAvailable ? "Disponível na build" : "Requer APK de teste"
+            moduleAvailable ? "Disponível" : "Indisponível nesta instalação"
           }
         />
         <KeyValue
@@ -82,10 +82,10 @@ export default function PermissionsScreen() {
           </Text>
         </View>
         <View style={styles.info}>
-          <MaterialIcons name="science" color="#155EEF" size={18} />
+          <MaterialIcons name="touch-app" color="#155EEF" size={18} />
           <Text style={styles.infoText}>
-            No primeiro uso, mantenha o modo de teste. Ele registra somente a
-            primeira aparição compatível e não envia gesto.
+            Com o serviço habilitado e a execução ativa, o DriverTouch segura o
+            cartão quando encontra “PRESSIONE E SEGURE PARA ATENDER”.
           </Text>
         </View>
       </SectionCard>
@@ -95,9 +95,9 @@ export default function PermissionsScreen() {
           value={notificationEnabled ? "Habilitado" : "Não habilitado"}
         />
         <Text style={styles.stepText}>
-          Este acesso é opcional e serve para registrar quando o PopDriver publica
-          um aviso. Ele não aceita corridas sozinho e o texto da notificação não
-          é salvo.
+          Este acesso é necessário para reconhecer “Você tem uma nova viagem
+          próxima” e abrir o Pop Driver quando a oferta chegar em segundo plano
+          ou durante uma corrida. Endereço e texto não são salvos.
         </Text>
         <ActionButton
           label="Abrir acesso às notificações"
@@ -110,7 +110,7 @@ export default function PermissionsScreen() {
       <SectionCard title="Desligamento completo">
         <Text style={styles.stepText}>
           Use a mesma tela do Android para desabilitar totalmente o serviço. O
-          botão de desarme no painel interrompe os gestos, mas preserva a
+          botão de desligar no painel interrompe os gestos, mas preserva a
           permissão para o próximo uso.
         </Text>
       </SectionCard>

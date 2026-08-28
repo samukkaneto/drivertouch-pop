@@ -1,4 +1,4 @@
-export type AssistMode = "off" | "test" | "assist";
+export type AssistMode = "off" | "assist";
 export type EventSource = "app" | "android";
 
 export type Calibration = {
@@ -23,7 +23,7 @@ export type NativeEventRecord = {
 };
 
 export type SafeAcceptSettings = {
-  schemaVersion: 2;
+  schemaVersion: 3;
   appTarget: "popmove";
   mode: AssistMode;
   isArmed: boolean;
@@ -35,13 +35,13 @@ export type SafeAcceptSettings = {
 };
 
 export const DEFAULT_SETTINGS: SafeAcceptSettings = {
-  schemaVersion: 2,
+  schemaVersion: 3,
   appTarget: "popmove",
-  mode: "test",
+  mode: "assist",
   isArmed: false,
   longPressDurationMs: 2000,
   detectionDelayMs: 400,
-  acceptMarker: "aceitar",
+  acceptMarker: "pressione e segure para atender",
   calibration: null,
   events: [],
 };
@@ -117,23 +117,21 @@ function sanitizeEvents(value: unknown): EventRecord[] {
 export function sanitizeSettings(value: unknown): SafeAcceptSettings {
   if (!value || typeof value !== "object") return DEFAULT_SETTINGS;
   const candidate = value as Partial<SafeAcceptSettings>;
-  const mode: AssistMode = ["off", "test", "assist"].includes(
-    candidate.mode ?? "",
-  )
-    ? (candidate.mode as AssistMode)
-    : DEFAULT_SETTINGS.mode;
+  const mode: AssistMode = candidate.mode === "off" ? "off" : "assist";
   const calibration = sanitizeCalibration(candidate.calibration);
-  const marker =
+  const candidateMarker =
     typeof candidate.acceptMarker === "string" &&
     candidate.acceptMarker.trim().length >= 2
       ? candidate.acceptMarker.trim().toLocaleLowerCase("pt-BR").slice(0, 80)
       : DEFAULT_SETTINGS.acceptMarker;
+  const marker =
+    candidateMarker === "aceitar" ? DEFAULT_SETTINGS.acceptMarker : candidateMarker;
 
   return {
-    schemaVersion: 2,
+    schemaVersion: 3,
     appTarget: "popmove",
     mode,
-    isArmed: Boolean(candidate.isArmed && calibration && mode !== "off"),
+    isArmed: Boolean(calibration && mode === "assist"),
     longPressDurationMs: numberInRange(
       candidate.longPressDurationMs,
       500,

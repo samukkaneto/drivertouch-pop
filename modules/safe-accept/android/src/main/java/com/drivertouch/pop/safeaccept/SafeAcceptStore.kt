@@ -30,26 +30,32 @@ object SafeAcceptStore {
   private const val KEY_PENDING_X = "pending_calibration_x"
   private const val KEY_PENDING_Y = "pending_calibration_y"
   private const val KEY_PENDING_AT = "pending_calibration_at"
-  private const val KEY_OFFER_NOTIFICATION_KEY = "offer_notification_key"
+  private const val KEY_OFFER_NOTIFICATION_FINGERPRINT = "offer_notification_fingerprint"
   private const val KEY_OFFER_NOTIFICATION_AT = "offer_notification_at"
   private const val KEY_OFFER_NOTIFICATION_SEQUENCE = "offer_notification_sequence"
-  private const val KEY_CONSUMED_SCROLL_SEQUENCE = "consumed_scroll_sequence"
+  private const val KEY_HANDLED_OFFER_IDENTITY = "handled_offer_identity"
+  private const val KEY_HANDLED_OFFER_AT = "handled_offer_at"
   private const val MAX_EVENTS = 50
 
   fun load(context: Context): SafeAcceptConfig {
     val preferences = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+    val x = preferences.getFloat(KEY_X, -1f)
+    val y = preferences.getFloat(KEY_Y, -1f)
+    val storedMode = preferences.getString(KEY_MODE, "assist") ?: "assist"
+    val mode = if (storedMode == "off") "off" else "assist"
+    val hasCalibration = x in 0f..1f && y in 0f..1f
     return SafeAcceptConfig(
-      armed = preferences.getBoolean(KEY_ARMED, false),
-      mode = preferences.getString(KEY_MODE, "test") ?: "test",
-      x = preferences.getFloat(KEY_X, -1f),
-      y = preferences.getFloat(KEY_Y, -1f),
+      armed = mode == "assist" && hasCalibration,
+      mode = mode,
+      x = x,
+      y = y,
       longPressDurationMs = preferences.getLong(KEY_DURATION, 2000L),
       detectionDelayMs = preferences.getLong(KEY_DELAY, 400L),
       acceptMarker = preferences
-        .getString(KEY_MARKER, "aceitar")
+        .getString(KEY_MARKER, "pressione e segure para atender")
         ?.trim()
         ?.lowercase(Locale.ROOT)
-        ?: "aceitar"
+        ?: "pressione e segure para atender"
     )
   }
 
@@ -63,9 +69,9 @@ object SafeAcceptStore {
     detectionDelayMs: Int,
     acceptMarker: String
   ) {
-    val safeMode = if (mode in setOf("off", "test", "assist")) mode else "off"
+    val safeMode = if (mode == "off") "off" else "assist"
     context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
-      .putBoolean(KEY_ARMED, armed && safeMode != "off")
+      .putBoolean(KEY_ARMED, armed && safeMode == "assist")
       .putString(KEY_MODE, safeMode)
       .putFloat(KEY_X, x.coerceIn(0.0, 1.0).toFloat())
       .putFloat(KEY_Y, y.coerceIn(0.0, 1.0).toFloat())
@@ -81,12 +87,6 @@ object SafeAcceptStore {
       .putString(KEY_MODE, "off")
       .apply()
     record(context, "system", "Automação desarmada pelo painel")
-  }
-
-  fun disarmOnServiceStart(context: Context) {
-    context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
-      .putBoolean(KEY_ARMED, false)
-      .apply()
   }
 
   @Synchronized
@@ -172,14 +172,20 @@ object SafeAcceptStore {
   }
 
   @Synchronized
-  fun markOfferNotification(context: Context, notificationKey: String) {
+  fun markOfferNotification(context: Context, fingerprint: String): Boolean {
     val preferences = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+    val now = System.currentTimeMillis()
+    val previousFingerprint = preferences.getString(KEY_OFFER_NOTIFICATION_FINGERPRINT, null)
+    val previousAt = preferences.getLong(KEY_OFFER_NOTIFICATION_AT, 0L)
+    if (previousFingerprint == fingerprint && now - previousAt < 120_000L) return false
+
     val nextSequence = preferences.getLong(KEY_OFFER_NOTIFICATION_SEQUENCE, 0L) + 1L
     preferences.edit()
-      .putString(KEY_OFFER_NOTIFICATION_KEY, notificationKey.take(160))
-      .putLong(KEY_OFFER_NOTIFICATION_AT, System.currentTimeMillis())
+      .putString(KEY_OFFER_NOTIFICATION_FINGERPRINT, fingerprint.take(160))
+      .putLong(KEY_OFFER_NOTIFICATION_AT, now)
       .putLong(KEY_OFFER_NOTIFICATION_SEQUENCE, nextSequence)
-      .apply()
+      .commit()
+    return true
   }
 
   fun recentOfferNotification(context: Context, maxAgeMs: Long = 90_000L): Boolean {
@@ -188,24 +194,23 @@ object SafeAcceptStore {
     return at > 0L && System.currentTimeMillis() - at <= maxAgeMs
   }
 
-  /**
-   * Reserva no máximo uma tentativa de rolagem para cada notificação compatível.
-   * A sequência é consumida antes da ação para impedir repetição em eventos de
-   * acessibilidade disparados pela própria rolagem.
-   */
-  @Synchronized
-  fun claimOfferScroll(context: Context, maxAgeMs: Long = 90_000L): Boolean {
-    val preferences = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-    val notificationAt = preferences.getLong(KEY_OFFER_NOTIFICATION_AT, 0L)
-    val notificationSequence = preferences.getLong(KEY_OFFER_NOTIFICATION_SEQUENCE, 0L)
-    val consumedSequence = preferences.getLong(KEY_CONSUMED_SCROLL_SEQUENCE, 0L)
-    val notificationIsRecent =
-      notificationAt > 0L && System.currentTimeMillis() - notificationAt <= maxAgeMs
+  fun currentOfferNotificationFingerprint(context: Context): String? {
+    if (!recentOfferNotification(context)) return null
+    return context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+      .getString(KEY_OFFER_NOTIFICATION_FINGERPRINT, null)
+  }
 
-    if (!notificationIsRecent || notificationSequence <= consumedSequence) return false
+  @Synchronized
+  fun claimOfferIdentity(context: Context, identity: String): Boolean {
+    val preferences = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+    val now = System.currentTimeMillis()
+    val previousIdentity = preferences.getString(KEY_HANDLED_OFFER_IDENTITY, null)
+    val previousAt = preferences.getLong(KEY_HANDLED_OFFER_AT, 0L)
+    if (previousIdentity == identity && now - previousAt < 120_000L) return false
 
     preferences.edit()
-      .putLong(KEY_CONSUMED_SCROLL_SEQUENCE, notificationSequence)
+      .putString(KEY_HANDLED_OFFER_IDENTITY, identity.take(160))
+      .putLong(KEY_HANDLED_OFFER_AT, now)
       .commit()
     return true
   }

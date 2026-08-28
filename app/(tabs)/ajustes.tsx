@@ -4,11 +4,10 @@ import { ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 
 import { ActionButton, SectionCard } from "@/components/safe-accept-ui";
 import { useSafeAccept } from "@/lib/safe-accept-context";
-import type { AssistMode } from "@/lib/safe-accept-types";
 
 export default function SettingsScreen() {
   const router = useRouter();
-  const { settings, setMode, setTuning, addEvent } = useSafeAccept();
+  const { settings, setTuning, addEvent } = useSafeAccept();
   const [duration, setDuration] = useState(
     String(settings.longPressDurationMs),
   );
@@ -24,11 +23,11 @@ export default function SettingsScreen() {
     setTuning({
       longPressDurationMs,
       detectionDelayMs,
-      acceptMarker: marker.trim() || "aceitar",
+      acceptMarker: marker.trim() || "pressione e segure para atender",
     });
     addEvent(
       "config",
-      "Parâmetros atualizados; automação desarmada para nova revisão.",
+      "Parâmetros atualizados; execução automática mantida.",
     );
   }
 
@@ -43,36 +42,6 @@ export default function SettingsScreen() {
           As configurações são salvas somente neste aparelho.
         </Text>
       </View>
-
-      <SectionCard title="Modo de operação">
-        <View style={styles.modeList}>
-          {(["off", "test", "assist"] as AssistMode[]).map((mode) => (
-            <ActionButton
-              key={mode}
-              label={
-                mode === "off"
-                  ? "Desligado"
-                  : mode === "test"
-                    ? "Modo de teste"
-                    : "Modo assistido"
-              }
-              icon={
-                mode === "off"
-                  ? "power-settings-new"
-                  : mode === "test"
-                    ? "science"
-                    : "touch-app"
-              }
-              variant={settings.mode === mode ? "primary" : "secondary"}
-              onPress={() => setMode(mode)}
-            />
-          ))}
-        </View>
-        <Text style={styles.helper}>
-          Trocar o modo sempre desarma a automação. Volte ao painel para revisar
-          e armar novamente.
-        </Text>
-      </SectionCard>
 
       <SectionCard title="Gesto e detecção">
         <View style={styles.field}>
@@ -96,7 +65,7 @@ export default function SettingsScreen() {
           />
         </View>
         <View style={styles.field}>
-          <Text style={styles.label}>Texto de confirmação na tela</Text>
+          <Text style={styles.label}>Frase real do cartão da viagem</Text>
           <TextInput
             value={marker}
             onChangeText={setMarker}
@@ -106,8 +75,8 @@ export default function SettingsScreen() {
           />
         </View>
         <Text style={styles.helper}>
-          O texto ajuda o serviço a limitar a tentativa de gesto a uma tela com
-          marcador compatível. Ajuste-o depois de analisar a interface real.
+          A frase observada no Pop Driver é “PRESSIONE E SEGURE PARA ATENDER”.
+          O serviço só executa o gesto quando essa oferta aparece.
         </Text>
       </SectionCard>
 
@@ -138,7 +107,6 @@ const styles = StyleSheet.create({
     letterSpacing: -0.4,
   },
   subtitle: { color: "#475467", fontSize: 15, lineHeight: 22 },
-  modeList: { gap: 8 },
   field: { gap: 6, marginTop: 2 },
   label: { color: "#344054", fontSize: 13, fontWeight: "800" },
   input: {

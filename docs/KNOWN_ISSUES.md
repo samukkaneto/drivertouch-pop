@@ -1,34 +1,21 @@
-# Riscos e pendências
+# Limites e fatos conhecidos
 
-## Dependências de evidência real
+## Confirmado
 
-| ID   | Questão                                                        | Situação                                       |
-| ---- | -------------------------------------------------------------- | ---------------------------------------------- |
-| D-01 | O pacote instalado é `br.com.popmove.driver`?                  | Obtido de fonte pública; confirmar no aparelho |
-| D-02 | A oferta expõe texto ou descrição acessível?                   | Não confirmado                                 |
-| D-03 | Qual marcador é estável?                                       | Padrão atual: `aceitar`                        |
-| D-04 | Qual duração o controle aceita?                                | Padrão atual: 2.000 ms                         |
-| D-05 | A sobreposição se comporta corretamente no modelo do aparelho? | Precisa de teste físico                        |
+| Item | Estado |
+| --- | --- |
+| Pacote do POP driver | `br.com.popmove.driver` |
+| Texto da notificação | `Você tem uma nova viagem próxima` |
+| Texto do cartão | `PRESSIONE E SEGURE PARA ATENDER` |
+| Forma de aceite | Toque prolongado no cartão inteiro |
+| Tela ociosa | `Aguarde uma solicitação` |
 
-## Riscos mitigados no código
+## Limites técnicos restantes
 
-| Risco anterior                        | Mitigação atual                                                    |
-| ------------------------------------- | ------------------------------------------------------------------ |
-| Repetição na mesma oferta             | Trava por aparição, não apenas cooldown                            |
-| Armar depois de reinício              | Aplicativo e serviço sempre iniciam desarmados                     |
-| Trocar ajustes mantendo gesto ativo   | Toda mudança operacional desarma                                   |
-| Calibração incorreta em tela estreita | Medição real da grade e calibração sobre o app alvo                |
-| Eventos Kotlin invisíveis             | Registro nativo persistente integrado à interface                  |
-| “Desligar” ambíguo                    | Interface distingue desarmar de revogar a permissão Android        |
-| Build falhando antes do prebuild      | `local.properties` agora é criado depois do prebuild               |
-| Computador sem espaço para NDK        | Verificação prévia de espaço e build alternativo no GitHub Actions |
-| Dependências e permissões da Manus    | Backend, OAuth, LLM, áudio, vídeo e notificações removidos         |
-| APK debug tentou conectar ao Metro    | Workflow atualizado para gerar `assembleRelease` com bundle incluso |
+- Uma captura de tela mostra o visual, mas não revela quais textos o POP driver publica na árvore de Acessibilidade. Por isso existe o fallback notificação real + ponto calibrado.
+- O `contentIntent` da notificação é a forma correta de abrir o aplicativo, porém fabricantes podem aplicar restrições adicionais a atividades em segundo plano.
+- A conclusão de `dispatchGesture` confirma que o Android executou o toque; somente a mudança de estado do POP driver confirma que o servidor aceitou a viagem.
+- A APK atual é `arm64-v8a` e assinada para instalação direta, não para publicação em loja.
+- O DriverTouch depende das duas permissões permanecerem habilitadas e de o Android não restringir sua bateria em segundo plano.
 
-## Limites deliberados
-
-- Se uma nova oferta substituir outra sem o marcador desaparecer em nenhum evento acessível, o serviço não fará uma segunda tentativa. Essa falsa negativa é preferível a um aceite duplicado.
-- O diagnóstico não salva o texto completo da tela; se a árvore não expuser o marcador, poderá ser necessário um print anonimizado ou inspeção local controlada.
-- O serviço não consegue revogar sozinho a própria permissão de acessibilidade. O Android exige ação do usuário.
-- A APK de teste atual é `arm64-v8a`; aparelhos exclusivamente 32-bit exigirão uma variante específica.
-- Não distribuir publicamente antes de revisar os termos da PopMove e as políticas aplicáveis ao uso da API de acessibilidade.
+Nenhum desses limites é tratado como “modo de teste”; são condições do Android e do aplicativo externo que o Registro torna visíveis.

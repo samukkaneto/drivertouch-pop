@@ -24,6 +24,7 @@ export default function PanelScreen() {
   const router = useRouter();
   const { settings, isLoading, setArmed, disableNow } = useSafeAccept();
   const [nativeEnabled, setNativeEnabled] = useState(false);
+  const [notificationEnabled, setNotificationEnabled] = useState(false);
   const [lastNativeEvent, setLastNativeEvent] = useState<string | null>(null);
   const readiness = getReadiness(settings);
 
@@ -32,10 +33,12 @@ export default function PanelScreen() {
       getNativeStatus()
         .then((status) => {
           setNativeEnabled(status.serviceEnabled);
+          setNotificationEnabled(status.notificationListenerEnabled);
           setLastNativeEvent(status.lastNativeEvent);
         })
         .catch(() => {
           setNativeEnabled(false);
+          setNotificationEnabled(false);
           setLastNativeEvent(null);
         });
     }, []),
@@ -53,36 +56,19 @@ export default function PanelScreen() {
   const statusColor =
     readiness.tone === "active"
       ? "#12B76A"
-      : readiness.tone === "test"
-        ? "#F79009"
-        : readiness.tone === "ready"
-          ? "#155EEF"
-          : "#667085";
+      : readiness.tone === "ready"
+        ? "#155EEF"
+        : "#667085";
 
   function handleArmedChange(armed: boolean) {
     if (!armed) {
-      setArmed(false);
+      disableNow();
       return;
     }
     if (!nativeEnabled) {
       Alert.alert(
         "Serviço Android desabilitado",
         "Ative o serviço de acessibilidade antes de armar a automação.",
-      );
-      return;
-    }
-    if (settings.mode === "assist") {
-      Alert.alert(
-        "Armar modo assistido?",
-        "Depois de confirmado, uma aparição compatível no POP driver poderá gerar um toque prolongado. Faça o primeiro teste com o veículo parado.",
-        [
-          { text: "Cancelar", style: "cancel" },
-          {
-            text: "Armar",
-            style: "destructive",
-            onPress: () => setArmed(true),
-          },
-        ],
       );
       return;
     }
@@ -101,8 +87,8 @@ export default function PanelScreen() {
         </View>
         <Text style={styles.title}>DriverTouch Pop</Text>
         <Text style={styles.subtitle}>
-          Prepare o modo assistido, calibre o toque e acompanhe o estado no
-          próprio aparelho.
+          Reconhece novas viagens do Pop Driver e segura automaticamente o
+          cartão da corrida.
         </Text>
       </View>
 
@@ -114,39 +100,33 @@ export default function PanelScreen() {
         </View>
       </View>
 
-      <SectionCard title="Modo selecionado">
+      <SectionCard title="Execução automática">
         <View style={styles.modeWrap}>
           <Text style={styles.modeTitle}>
-            {settings.mode === "test"
-              ? "Teste"
-              : settings.mode === "assist"
-                ? "Assistido"
-                : "Desligado"}
+            {isActive ? "Ativa" : "Desligada"}
           </Text>
           <Text style={styles.modeText}>
-            {settings.mode === "test"
-              ? "Registra a preparação sem executar toque."
-              : settings.mode === "assist"
-                ? "Usa os parâmetros configurados quando o serviço estiver habilitado."
-                : "Nenhuma ação será tentada."}
+            {isActive
+              ? "A notificação abre o Pop Driver; o cartão real dispara o toque prolongado."
+              : "Nenhuma corrida será aceita automaticamente."}
           </Text>
         </View>
         <View style={styles.switchRow}>
           <View style={styles.switchCopy}>
-            <Text style={styles.switchTitle}>Armar assistente</Text>
+            <Text style={styles.switchTitle}>Aceitar corridas automaticamente</Text>
             <Text style={styles.switchText}>
               {!settings.calibration
                 ? "Calibre o ponto primeiro."
                 : !nativeEnabled
                   ? "Ative o serviço Android primeiro."
-                  : "Pronto para ser armado nesta sessão."}
+                  : "Permanece ativa até você desligar."}
             </Text>
           </View>
           <Switch
             value={isActive}
             onValueChange={handleArmedChange}
             disabled={
-              !settings.calibration || settings.mode === "off" || !nativeEnabled
+              !settings.calibration || !nativeEnabled
             }
             trackColor={{ false: "#D0D5DD", true: "#84ADFF" }}
             thumbColor={isActive ? "#155EEF" : "#FFFFFF"}
@@ -162,6 +142,10 @@ export default function PanelScreen() {
         <KeyValue
           label="Ponto de toque"
           value={settings.calibration ? "Calibrado" : "Pendente"}
+        />
+        <KeyValue
+          label="Notificações"
+          value={notificationEnabled ? "Habilitadas" : "Aguardando ativação"}
         />
         <KeyValue
           label="Duração"
@@ -188,7 +172,7 @@ export default function PanelScreen() {
         />
         {isActive ? (
           <ActionButton
-            label="Desarmar automação"
+            label="Desligar execução automática"
             icon="power-settings-new"
             variant="danger"
             onPress={() => disableNow()}
@@ -199,9 +183,9 @@ export default function PanelScreen() {
       <View style={styles.note}>
         <MaterialIcons color="#475467" name="info-outline" size={18} />
         <Text style={styles.noteText}>
-          O primeiro teste deve ser feito com o veículo parado e no modo de
-          teste. Desarmar impede gestos; para revogar totalmente a permissão,
-          use as configurações de Acessibilidade do Android.
+          A oferta é confirmada pelo texto “PRESSIONE E SEGURE PARA ATENDER”.
+          O acesso às notificações permite abrir também uma nova viagem que
+          chegue enquanto outra corrida estiver em andamento.
         </Text>
       </View>
     </ScrollView>

@@ -30,7 +30,7 @@ export default function CalibrationScreen() {
     String(settings.calibration?.x ?? "0.50"),
   );
   const [yInput, setYInput] = useState(
-    String(settings.calibration?.y ?? "0.72"),
+    String(settings.calibration?.y ?? "0.30"),
   );
   const [message, setMessage] = useState(
     "Toque no quadro abaixo ou informe os valores normalizados.",
@@ -66,7 +66,7 @@ export default function CalibrationScreen() {
   );
   const displayPoint = {
     x: clampNormalized(parsedPoint.x ?? 0.5),
-    y: clampNormalized(parsedPoint.y ?? 0.72),
+    y: clampNormalized(parsedPoint.y ?? 0.3),
   };
 
   function save() {
@@ -111,8 +111,8 @@ export default function CalibrationScreen() {
       <View style={styles.header}>
         <Text style={styles.title}>Calibrar toque</Text>
         <Text style={styles.subtitle}>
-          Defina o ponto central do controle de aceite visto no seu POP driver.
-          Os valores são relativos ao tamanho da tela.
+          Defina um ponto seguro dentro do cartão da viagem. Os valores são
+          relativos ao tamanho da tela.
         </Text>
       </View>
 
@@ -120,7 +120,7 @@ export default function CalibrationScreen() {
         <Text style={styles.helper}>
           O DriverTouch abrirá o POP driver com um pequeno controle flutuante.
           Prepare a tela desejada, toque em “Marcar agora” e depois toque no
-          centro do botão de aceite.
+          interior do cartão da corrida.
         </Text>
         <ActionButton
           label="Calibrar sobre o POP driver"
@@ -175,7 +175,7 @@ export default function CalibrationScreen() {
               ]}
             />
             <Text style={styles.gridHint}>
-              Toque na posição aproximada{`\n`}do botão de aceite
+              Toque na posição aproximada{`\n`}do cartão da viagem
             </Text>
           </Pressable>
         </View>
@@ -214,7 +214,7 @@ export default function CalibrationScreen() {
           </View>
         </View>
         <Text style={styles.helper}>
-          Exemplo: X 0,500 e Y 0,720 representam o centro horizontal e 72% da
+          Exemplo: X 0,500 e Y 0,300 representam o centro horizontal e 30% da
           altura da tela.
         </Text>
       </SectionCard>
