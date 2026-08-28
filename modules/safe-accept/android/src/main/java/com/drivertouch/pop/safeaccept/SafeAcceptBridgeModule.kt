@@ -1,6 +1,7 @@
 package com.drivertouch.pop.safeaccept
 
 import android.content.Context
+import android.content.ComponentName
 import android.content.Intent
 import android.accessibilityservice.AccessibilityServiceInfo
 import android.provider.Settings
@@ -55,7 +56,7 @@ class SafeAcceptBridgeModule : Module() {
       val config = SafeAcceptStore.load(context)
       mapOf(
         "serviceEnabled" to isAccessibilityServiceEnabled(),
-        "notificationListenerEnabled" to PopMoveNotificationListenerService.listenerIsEnabled,
+        "notificationListenerEnabled" to isNotificationListenerEnabled(),
         "recentOfferNotification" to SafeAcceptStore.recentOfferNotification(context),
         "armed" to config.armed,
         "lastNativeEvent" to SafeAcceptStore.lastEvent(context)
@@ -91,5 +92,20 @@ class SafeAcceptBridgeModule : Module() {
       service.resolveInfo.serviceInfo.packageName == context.packageName &&
         service.resolveInfo.serviceInfo.name == PopMoveAccessibilityService::class.java.name
     }
+  }
+
+  private fun isNotificationListenerEnabled(): Boolean {
+    val enabledServices = Settings.Secure.getString(
+      context.contentResolver,
+      "enabled_notification_listeners"
+    ) ?: return false
+
+    return enabledServices
+      .split(':')
+      .mapNotNull(ComponentName::unflattenFromString)
+      .any { component ->
+        component.packageName == context.packageName &&
+          component.className == PopMoveNotificationListenerService::class.java.name
+      }
   }
 }

@@ -30,6 +30,10 @@ object SafeAcceptStore {
   private const val KEY_PENDING_X = "pending_calibration_x"
   private const val KEY_PENDING_Y = "pending_calibration_y"
   private const val KEY_PENDING_AT = "pending_calibration_at"
+  private const val KEY_OFFER_NOTIFICATION_KEY = "offer_notification_key"
+  private const val KEY_OFFER_NOTIFICATION_AT = "offer_notification_at"
+  private const val KEY_OFFER_NOTIFICATION_SEQUENCE = "offer_notification_sequence"
+  private const val KEY_CONSUMED_SCROLL_SEQUENCE = "consumed_scroll_sequence"
   private const val MAX_EVENTS = 50
 
   fun load(context: Context): SafeAcceptConfig {
@@ -167,29 +171,43 @@ object SafeAcceptStore {
     return result
   }
 
+  @Synchronized
   fun markOfferNotification(context: Context, notificationKey: String) {
-    context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
-      .putString("offer_notification_key", notificationKey.take(160))
-      .putLong("offer_notification_at", System.currentTimeMillis())
+    val preferences = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+    val nextSequence = preferences.getLong(KEY_OFFER_NOTIFICATION_SEQUENCE, 0L) + 1L
+    preferences.edit()
+      .putString(KEY_OFFER_NOTIFICATION_KEY, notificationKey.take(160))
+      .putLong(KEY_OFFER_NOTIFICATION_AT, System.currentTimeMillis())
+      .putLong(KEY_OFFER_NOTIFICATION_SEQUENCE, nextSequence)
       .apply()
   }
 
   fun recentOfferNotification(context: Context, maxAgeMs: Long = 90_000L): Boolean {
     val preferences = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-    val at = preferences.getLong("offer_notification_at", 0L)
+    val at = preferences.getLong(KEY_OFFER_NOTIFICATION_AT, 0L)
     return at > 0L && System.currentTimeMillis() - at <= maxAgeMs
   }
 
-  fun canAttemptOfferScroll(context: Context, minIntervalMs: Long = 12_000L): Boolean {
+  /**
+   * Reserva no máximo uma tentativa de rolagem para cada notificação compatível.
+   * A sequência é consumida antes da ação para impedir repetição em eventos de
+   * acessibilidade disparados pela própria rolagem.
+   */
+  @Synchronized
+  fun claimOfferScroll(context: Context, maxAgeMs: Long = 90_000L): Boolean {
     val preferences = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-    val lastAttempt = preferences.getLong("offer_scroll_attempt_at", 0L)
-    return System.currentTimeMillis() - lastAttempt >= minIntervalMs
-  }
+    val notificationAt = preferences.getLong(KEY_OFFER_NOTIFICATION_AT, 0L)
+    val notificationSequence = preferences.getLong(KEY_OFFER_NOTIFICATION_SEQUENCE, 0L)
+    val consumedSequence = preferences.getLong(KEY_CONSUMED_SCROLL_SEQUENCE, 0L)
+    val notificationIsRecent =
+      notificationAt > 0L && System.currentTimeMillis() - notificationAt <= maxAgeMs
 
-  fun markOfferScrollAttempt(context: Context) {
-    context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
-      .putLong("offer_scroll_attempt_at", System.currentTimeMillis())
-      .apply()
+    if (!notificationIsRecent || notificationSequence <= consumedSequence) return false
+
+    preferences.edit()
+      .putLong(KEY_CONSUMED_SCROLL_SEQUENCE, notificationSequence)
+      .commit()
+    return true
   }
 
   fun lastEvent(context: Context): String? {

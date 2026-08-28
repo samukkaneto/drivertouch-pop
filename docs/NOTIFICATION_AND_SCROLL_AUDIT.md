@@ -12,7 +12,7 @@ Foi incluído `PopMoveNotificationListenerService`, declarado com `BIND_NOTIFICA
 
 O listener não aceita corrida e não dispara gesto. Ele cria apenas um sinal temporário de que uma notificação compatível apareceu. O painel de permissões ganhou um botão para abrir a tela de acesso às notificações, e o Registro ganhou um ícone para eventos `notification`.
 
-Também foi adicionada rolagem experimental. Se o modo assistido estiver armado, houver uma notificação compatível nos últimos 90 segundos e o marcador ainda não estiver visível, o serviço procura um nó rolável e solicita **uma única rolagem para frente a cada 12 segundos**. Depois da rolagem, um novo evento de conteúdo pode fazer o serviço reavaliar a árvore e encontrar o marcador. Se o marcador aparecer, a lógica existente pode então enviar o toque prolongado conforme a calibração.
+Também foi adicionada rolagem experimental. Se o modo assistido estiver armado, houver uma notificação compatível nos últimos 90 segundos e o marcador ainda não estiver visível, o serviço procura um nó rolável e solicita **no máximo uma rolagem para cada notificação compatível**. A tentativa é consumida antes da ação, impedindo que os eventos produzidos pela própria rolagem iniciem um ciclo. Depois da rolagem, um novo evento de conteúdo pode fazer o serviço reavaliar a árvore e encontrar o marcador. Se o marcador aparecer, a lógica existente pode então enviar o toque prolongado conforme a calibração.
 
 ## Por que isso ainda não prova que a segunda corrida funcionará
 

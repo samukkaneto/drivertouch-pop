@@ -69,11 +69,9 @@ class PopMoveAccessibilityService : AccessibilityService() {
       offerVisible = false
       if (
         config.mode == "assist" &&
-        SafeAcceptStore.recentOfferNotification(this) &&
-        SafeAcceptStore.canAttemptOfferScroll(this)
+        SafeAcceptStore.claimOfferScroll(this)
       ) {
         val scrolled = scrollFirstScrollable(root)
-        SafeAcceptStore.markOfferScrollAttempt(this)
         SafeAcceptStore.record(
           this,
           "gesture",

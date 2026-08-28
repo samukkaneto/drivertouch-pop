@@ -19,12 +19,14 @@ class PopMoveNotificationListenerService : NotificationListenerService() {
     if (sbn.packageName != PopMoveAccessibilityService.POP_DRIVER_PACKAGE) return
 
     val extras = sbn.notification.extras
-    val searchable = listOf(
-      extras.getCharSequence(Notification.EXTRA_TITLE),
-      extras.getCharSequence(Notification.EXTRA_TEXT),
-      extras.getCharSequence(Notification.EXTRA_BIG_TEXT),
-      extras.getCharSequenceArray(Notification.EXTRA_TEXT_LINES)?.joinToString(" ")
-    ).filterNotNull().joinToString(" ").lowercase(Locale.ROOT)
+    val searchable = runCatching {
+      listOf(
+        extras.getCharSequence(Notification.EXTRA_TITLE),
+        extras.getCharSequence(Notification.EXTRA_TEXT),
+        extras.getCharSequence(Notification.EXTRA_BIG_TEXT),
+        extras.getCharSequenceArray(Notification.EXTRA_TEXT_LINES)?.joinToString(" ")
+      ).filterNotNull().joinToString(" ").lowercase(Locale.ROOT)
+    }.getOrDefault("")
 
     val candidate = OFFER_MARKERS.any(searchable::contains)
     SafeAcceptStore.record(

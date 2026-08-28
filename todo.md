@@ -23,7 +23,7 @@
 
 ## Depende de aparelho físico
 
-- [ ] Instalar a APK debug
+- [ ] Instalar a APK independente
 - [ ] Confirmar o pacote real do POP driver
 - [ ] Confirmar que o serviço aparece e pode ser revogado em Acessibilidade
 - [ ] Validar a sobreposição de calibração no modelo do aparelho

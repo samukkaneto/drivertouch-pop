@@ -4,7 +4,7 @@ Auxiliar Android local para reduzir a interação manual do motorista com a tela
 
 ## Estado atual
 
-A versão 0.2.0 substitui o protótipo genérico criado na Manus por uma base Android dedicada:
+A versão 0.3.0 substitui o protótipo genérico criado na Manus por uma base Android dedicada e acrescenta diagnóstico opcional de notificações com rolagem limitada:
 
 - sem login, backend, banco de dados, LLM ou armazenamento em nuvem;
 - inicia sempre desarmada, inclusive após reinício do aplicativo ou reconexão do serviço;
