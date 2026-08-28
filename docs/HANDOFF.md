@@ -25,4 +25,4 @@ Capturas de 28/08/2026 confirmaram que não há botão de aceite. A tela ociosa 
 
 A versão 0.6.0 preserva o aceite individual da 0.5.0 e corrige a fila com rolagem exclusivamente vertical, rápida e reta. A pressão só ocorre após a frase completa. A esteira do GitHub é a fonte de validação de TypeScript, testes, lint, prebuild, Kotlin/Gradle, assinatura e APK.
 
-Build aprovado no GitHub Actions em 28/08/2026: execução `33167890429`, commit de implementação `9c84e36`, pacote `com.drivertouch.pop`, `versionCode 5` e assinatura compatível com a 0.4.0.
+Build 0.6.0 aprovado no GitHub Actions em 28/08/2026: execução `33187405702`, commit de implementação `4adcf08`, correção da proteção `b5711d4`, pacote `com.drivertouch.pop`, `versionCode 6` e assinatura compatível com a 0.5.0.
