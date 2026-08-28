@@ -25,4 +25,4 @@ Capturas de 28/08/2026 confirmaram que não há botão de aceite. A tela ociosa 
 
 A versão 0.7.0 preserva o aceite individual e corrige a falha observada em corrida já ativa: texto fora da tela não é mais tratado como visível, a busca usa até três arrastos verticais confinados à área útil e a pressão é recalculada pela frase visível. A esteira do GitHub é a fonte de validação de TypeScript, testes, lint, prebuild, Kotlin/Gradle, assinatura e APK.
 
-O build 0.7.0 deve confirmar o pacote `com.drivertouch.pop`, `versionCode 7` e assinatura compatível com as versões anteriores antes da publicação.
+Build 0.7.0 aprovado no GitHub Actions em 28/08/2026: execução `33211547498`, commit de implementação `3a9f581`, pacote `com.drivertouch.pop`, `versionCode 7`, assinatura v2 compatível com a 0.6.0 e SHA-256 `0E94F5E27E9498BBF5DD14783567B1FAE7B17F75E5212A4C1D7C7CB5FCAB2D4C`.
