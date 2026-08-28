@@ -6,13 +6,17 @@
 - [x] Incorporar capturas reais da tela ociosa, notificação e cartão
 - [x] Substituir `aceitar` por `PRESSIONE E SEGURE PARA ATENDER`
 - [x] Reconhecer `Você tem uma nova viagem próxima`
-- [x] Abrir o Pop Driver pelo `contentIntent` da notificação
+- [x] Abrir pelo `contentIntent` somente quando o Pop Driver não está em primeiro plano
+- [x] Rolar até o cartão da nova corrida durante uma viagem em andamento
+- [x] Iniciar reconhecimento em 0 ms e reduzir a pressão inicial para 1.600 ms
+- [x] Aprender a duração pela resposta real do cartão e repetir uma vez se necessário
 - [x] Tocar no centro do marcador acessível quando disponível
 - [x] Usar a calibração como fallback após a notificação real
 - [x] Distinguir novas viagens por identidade, inclusive em fila
 - [x] Remover o modo de teste e manter execução calibrada entre reinícios
 - [x] Manter desligamento imediato e revogação Android
 - [x] Compilar e publicar a APK 0.4.0 de execução
+- [ ] Compilar e publicar a APK 0.5.0 de execução
 
 ## Evidência do aparelho
 

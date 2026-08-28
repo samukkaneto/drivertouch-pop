@@ -27,12 +27,27 @@ class PopMoveAccessibilityService : AccessibilityService() {
   private var lastGestureAt = 0L
   private val offerHandler = Handler(Looper.getMainLooper())
   private var overlayView: View? = null
+  private var gestureInFlight = false
+  private var offerResolutionInProgress = false
+  private var scrollGestureInFlight = false
+  private var scrollOfferFingerprint: String? = null
+  private var scrollAttempts = 0
+  private var lastScrollAt = 0L
 
   private data class ScreenSnapshot(
     val markerVisible: Boolean,
     val markerCenterX: Float?,
     val markerCenterY: Float?,
     val fingerprint: String
+  )
+
+  private data class GestureAttempt(
+    val identity: String,
+    val screenFingerprint: String,
+    val x: Float,
+    val y: Float,
+    val durationMs: Long,
+    val retryCount: Int
   )
 
   override fun onServiceConnected() {
@@ -59,7 +74,7 @@ class PopMoveAccessibilityService : AccessibilityService() {
       return
     }
 
-    evaluateActiveWindow()
+    evaluateActiveWindow(allowScroll = true)
   }
 
   override fun onInterrupt() {
@@ -75,10 +90,14 @@ class PopMoveAccessibilityService : AccessibilityService() {
     super.onDestroy()
   }
 
-  private fun evaluateActiveWindow(allowNotificationFallback: Boolean = false) {
+  private fun evaluateActiveWindow(
+    allowNotificationFallback: Boolean = false,
+    allowScroll: Boolean = false
+  ) {
     val config = SafeAcceptStore.load(this)
     if (!config.armed || config.mode == "off") return
     if (config.x !in 0f..1f || config.y !in 0f..1f) return
+    if (offerResolutionInProgress) return
 
     val root = rootInActiveWindow ?: return
     if (root.packageName?.toString() != POP_DRIVER_PACKAGE) {
@@ -86,18 +105,26 @@ class PopMoveAccessibilityService : AccessibilityService() {
       return
     }
 
-    val snapshot = try {
-      buildScreenSnapshot(root, config.acceptMarker)
-    } finally {
+    val snapshot = buildScreenSnapshot(root, config.acceptMarker)
+    val notificationFingerprint = SafeAcceptStore.currentOfferNotificationFingerprint(this)
+    if (!snapshot.markerVisible) {
+      val scrollPending = if (allowScroll && notificationFingerprint != null) {
+        attemptOfferScroll(root, notificationFingerprint)
+      } else {
+        false
+      }
+      root.recycle()
+      if (scrollPending || !(allowNotificationFallback && notificationFingerprint != null)) return
+    } else {
       root.recycle()
     }
-    val notificationFingerprint = SafeAcceptStore.currentOfferNotificationFingerprint(this)
-    if (!snapshot.markerVisible && !(allowNotificationFallback && notificationFingerprint != null)) {
+
+    if (gestureInFlight || scrollGestureInFlight) {
       return
     }
 
     val now = System.currentTimeMillis()
-    val minimumInterval = config.longPressDurationMs + config.detectionDelayMs + 1_000L
+    val minimumInterval = config.longPressDurationMs + config.detectionDelayMs + 200L
     if (now - lastGestureAt < minimumInterval) return
 
     val identity = notificationFingerprint?.let { "notification:$it" }
@@ -119,15 +146,29 @@ class PopMoveAccessibilityService : AccessibilityService() {
         "Notificação real confirmada; toque longo direcionado pela calibração"
       }
     )
-    dispatchLongPress(config, x, y)
+    dispatchLongPress(
+      config,
+      GestureAttempt(
+        identity = identity,
+        screenFingerprint = snapshot.fingerprint,
+        x = x,
+        y = y,
+        durationMs = config.longPressDurationMs,
+        retryCount = 0
+      )
+    )
   }
 
-  private fun dispatchLongPress(config: SafeAcceptConfig, x: Float, y: Float) {
-    val path = Path().apply { moveTo(x, y) }
+  private fun dispatchLongPress(config: SafeAcceptConfig, attempt: GestureAttempt) {
+    if (gestureInFlight || scrollGestureInFlight) return
+    offerResolutionInProgress = true
+    gestureInFlight = true
+    lastGestureAt = System.currentTimeMillis()
+    val path = Path().apply { moveTo(attempt.x, attempt.y) }
     val stroke = GestureDescription.StrokeDescription(
       path,
       config.detectionDelayMs,
-      config.longPressDurationMs
+      attempt.durationMs
     )
     val gesture = GestureDescription.Builder().addStroke(stroke).build()
 
@@ -135,14 +176,18 @@ class PopMoveAccessibilityService : AccessibilityService() {
       gesture,
       object : GestureResultCallback() {
         override fun onCompleted(gestureDescription: GestureDescription?) {
+          gestureInFlight = false
           SafeAcceptStore.record(
             this@PopMoveAccessibilityService,
             "gesture",
-            "Toque prolongado concluído no cartão da viagem"
+            "Toque prolongado de ${attempt.durationMs} ms concluído no cartão da viagem"
           )
+          offerHandler.postDelayed({ verifyGestureResult(config, attempt) }, VERIFY_DELAY_MS)
         }
 
         override fun onCancelled(gestureDescription: GestureDescription?) {
+          gestureInFlight = false
+          offerResolutionInProgress = false
           SafeAcceptStore.record(
             this@PopMoveAccessibilityService,
             "gesture",
@@ -154,11 +199,200 @@ class PopMoveAccessibilityService : AccessibilityService() {
     )
 
     if (!accepted) {
+      gestureInFlight = false
+      offerResolutionInProgress = false
       SafeAcceptStore.record(
         this,
         "gesture",
         "Android recusou o gesto solicitado"
       )
+    }
+  }
+
+  private fun verifyGestureResult(config: SafeAcceptConfig, attempt: GestureAttempt) {
+    if (gestureInFlight || scrollGestureInFlight) return
+    val root = rootInActiveWindow
+    if (root == null || root.packageName?.toString() != POP_DRIVER_PACKAGE) {
+      root?.recycle()
+      completeOfferSession(attempt.identity)
+      offerResolutionInProgress = false
+      SafeAcceptStore.record(
+        this,
+        "gesture",
+        "POP driver saiu da janela após o toque; resultado não usado no aprendizado"
+      )
+      return
+    }
+
+    val snapshot = try {
+      buildScreenSnapshot(root, config.acceptMarker)
+    } finally {
+      root.recycle()
+    }
+    val cardChanged = !snapshot.markerVisible || snapshot.fingerprint != attempt.screenFingerprint
+    if (cardChanged) {
+      val learning = SafeAcceptStore.recordGestureSuccess(this, attempt.durationMs)
+      completeOfferSession(attempt.identity)
+      offerResolutionInProgress = false
+      SafeAcceptStore.record(
+        this,
+        "gesture",
+        if (learning.changed) {
+          "Cartão respondeu; duração aprendida reduzida para ${learning.durationMs} ms"
+        } else {
+          "Cartão respondeu ao toque automático"
+        }
+      )
+      offerHandler.postDelayed(
+        { evaluateActiveWindow(allowScroll = true) },
+        POST_GESTURE_SCAN_DELAY_MS
+      )
+      return
+    }
+
+    val learning = SafeAcceptStore.recordGestureFailure(this, attempt.durationMs)
+    if (attempt.retryCount >= MAX_GESTURE_RETRIES || !learning.changed) {
+      offerResolutionInProgress = false
+      SafeAcceptStore.record(
+        this,
+        "gesture",
+        "Cartão permaneceu visível após a repetição; duração aprendida em ${learning.durationMs} ms"
+      )
+      return
+    }
+
+    SafeAcceptStore.record(
+      this,
+      "gesture",
+      "Cartão não respondeu; repetindo imediatamente com ${learning.durationMs} ms"
+    )
+    offerHandler.postDelayed(
+      {
+        dispatchLongPress(
+          config.copy(longPressDurationMs = learning.durationMs, detectionDelayMs = 0L),
+          attempt.copy(
+            durationMs = learning.durationMs,
+            retryCount = attempt.retryCount + 1
+          )
+        )
+      },
+      RETRY_DELAY_MS
+    )
+  }
+
+  private fun attemptOfferScroll(root: AccessibilityNodeInfo, fingerprint: String): Boolean {
+    if (scrollOfferFingerprint != fingerprint) {
+      scrollOfferFingerprint = fingerprint
+      scrollAttempts = 0
+      lastScrollAt = 0L
+    }
+    if (gestureInFlight || scrollGestureInFlight) return true
+    if (scrollAttempts >= MAX_SCROLL_ATTEMPTS) return false
+
+    val now = System.currentTimeMillis()
+    if (now - lastScrollAt < MIN_SCROLL_INTERVAL_MS) return true
+    lastScrollAt = now
+    scrollAttempts += 1
+
+    if (scrollFirstScrollable(root)) {
+      if (scrollAttempts == 1) {
+        SafeAcceptStore.record(
+          this,
+          "gesture",
+          "Busca por rolagem iniciada para localizar a corrida em fila"
+        )
+      }
+      offerHandler.postDelayed(
+        {
+          evaluateActiveWindow(
+            allowNotificationFallback = scrollAttempts >= MAX_SCROLL_ATTEMPTS,
+            allowScroll = true
+          )
+        },
+        AFTER_SCROLL_SCAN_DELAY_MS
+      )
+      return true
+    }
+
+    return dispatchFallbackScrollGesture()
+  }
+
+  private fun scrollFirstScrollable(node: AccessibilityNodeInfo): Boolean {
+    if (node.isScrollable && node.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD)) {
+      return true
+    }
+    for (index in 0 until node.childCount) {
+      val child = node.getChild(index) ?: continue
+      try {
+        if (scrollFirstScrollable(child)) return true
+      } finally {
+        child.recycle()
+      }
+    }
+    return false
+  }
+
+  private fun dispatchFallbackScrollGesture(): Boolean {
+    val metrics = resources.displayMetrics
+    val path = Path().apply {
+      moveTo(metrics.widthPixels * 0.5f, metrics.heightPixels * 0.72f)
+      lineTo(metrics.widthPixels * 0.5f, metrics.heightPixels * 0.34f)
+    }
+    val gesture = GestureDescription.Builder()
+      .addStroke(GestureDescription.StrokeDescription(path, 0L, SCROLL_DURATION_MS))
+      .build()
+    scrollGestureInFlight = true
+    val accepted = dispatchGesture(
+      gesture,
+      object : GestureResultCallback() {
+        override fun onCompleted(gestureDescription: GestureDescription?) {
+          scrollGestureInFlight = false
+          if (scrollAttempts == 1) {
+            SafeAcceptStore.record(
+              this@PopMoveAccessibilityService,
+              "gesture",
+              "Busca por gesto de rolagem iniciada para localizar a corrida em fila"
+            )
+          }
+          offerHandler.postDelayed(
+            {
+              evaluateActiveWindow(
+                allowNotificationFallback = scrollAttempts >= MAX_SCROLL_ATTEMPTS,
+                allowScroll = true
+              )
+            },
+            AFTER_SCROLL_SCAN_DELAY_MS
+          )
+        }
+
+        override fun onCancelled(gestureDescription: GestureDescription?) {
+          scrollGestureInFlight = false
+          offerHandler.postDelayed(
+            {
+              evaluateActiveWindow(
+                allowNotificationFallback = scrollAttempts >= MAX_SCROLL_ATTEMPTS,
+                allowScroll = true
+              )
+            },
+            AFTER_SCROLL_SCAN_DELAY_MS
+          )
+        }
+      },
+      null
+    )
+    if (!accepted) scrollGestureInFlight = false
+    return accepted
+  }
+
+  private fun completeOfferSession(identity: String) {
+    val prefix = "notification:"
+    if (!identity.startsWith(prefix)) return
+    val fingerprint = identity.removePrefix(prefix)
+    SafeAcceptStore.completeOfferNotification(this, fingerprint)
+    if (scrollOfferFingerprint == fingerprint) {
+      scrollOfferFingerprint = null
+      scrollAttempts = 0
+      lastScrollAt = 0L
     }
   }
 
@@ -213,11 +447,34 @@ class PopMoveAccessibilityService : AccessibilityService() {
     )
   }
 
-  private fun scheduleOfferChecks() {
-    longArrayOf(100L, 350L, 750L, 1_300L, 2_200L, 3_500L).forEach { delay ->
+  private fun scheduleOfferChecks(alreadyOpen: Boolean) {
+    val fingerprint = SafeAcceptStore.currentOfferNotificationFingerprint(this)
+    if (fingerprint != null && fingerprint != scrollOfferFingerprint) {
+      scrollOfferFingerprint = fingerprint
+      scrollAttempts = 0
+      lastScrollAt = 0L
+    }
+
+    longArrayOf(0L, 25L, 60L).forEach { delay ->
       offerHandler.postDelayed({ evaluateActiveWindow() }, delay)
     }
-    offerHandler.postDelayed({ evaluateActiveWindow(allowNotificationFallback = true) }, 5_000L)
+    val scrollStart = if (alreadyOpen) 80L else 130L
+    longArrayOf(0L, 80L, 170L, 290L, 440L, 630L, 850L).forEach { offset ->
+      offerHandler.postDelayed(
+        { evaluateActiveWindow(allowScroll = true) },
+        scrollStart + offset
+      )
+    }
+    val fallbackDelay = if (alreadyOpen) 1_050L else 1_250L
+    offerHandler.postDelayed(
+      {
+        evaluateActiveWindow(
+          allowNotificationFallback = true,
+          allowScroll = true
+        )
+      },
+      fallbackDelay
+    )
   }
 
   private fun sha256(value: String): String {
@@ -383,9 +640,26 @@ class PopMoveAccessibilityService : AccessibilityService() {
     return (value * resources.displayMetrics.density).toInt()
   }
 
+  private fun isTargetWindowActive(): Boolean {
+    val root = rootInActiveWindow ?: return false
+    return try {
+      root.packageName?.toString() == POP_DRIVER_PACKAGE
+    } finally {
+      root.recycle()
+    }
+  }
+
   companion object {
     const val POP_DRIVER_PACKAGE = "br.com.popmove.driver"
     const val OFFER_SCREEN_MARKER = "pressione e segure para atender"
+    private const val MAX_SCROLL_ATTEMPTS = 8
+    private const val MIN_SCROLL_INTERVAL_MS = 60L
+    private const val AFTER_SCROLL_SCAN_DELAY_MS = 20L
+    private const val SCROLL_DURATION_MS = 90L
+    private const val VERIFY_DELAY_MS = 350L
+    private const val RETRY_DELAY_MS = 60L
+    private const val POST_GESTURE_SCAN_DELAY_MS = 30L
+    private const val MAX_GESTURE_RETRIES = 1
 
     @Volatile
     private var currentInstance: PopMoveAccessibilityService? = null
@@ -398,8 +672,12 @@ class PopMoveAccessibilityService : AccessibilityService() {
       return currentInstance?.beginCalibrationOverlay() ?: false
     }
 
-    fun onOfferNotification() {
-      currentInstance?.scheduleOfferChecks()
+    fun isPopDriverWindowActive(): Boolean {
+      return currentInstance?.isTargetWindowActive() ?: false
+    }
+
+    fun onOfferNotification(alreadyOpen: Boolean) {
+      currentInstance?.scheduleOfferChecks(alreadyOpen)
     }
   }
 }

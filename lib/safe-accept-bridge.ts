@@ -13,6 +13,7 @@ type NativeStatus = {
   lastNativeEvent: string | null;
   notificationListenerEnabled: boolean;
   recentOfferNotification: boolean;
+  effectiveDurationMs: number;
 };
 
 const bridge = SafeAcceptBridgeModule;
@@ -58,6 +59,7 @@ export async function getNativeStatus(): Promise<NativeStatus> {
       lastNativeEvent: null,
       notificationListenerEnabled: false,
       recentOfferNotification: false,
+      effectiveDurationMs: 1600,
     };
   }
 

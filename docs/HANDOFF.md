@@ -12,13 +12,15 @@ Capturas de 28/08/2026 confirmaram que não há botão de aceite. A tela ociosa 
 
 - Execução real, sem modo de teste.
 - Pacote oficial `br.com.popmove.driver` confirmado na Play Store e nas capturas.
-- Notificação abre o POP driver e cria a identidade da oferta.
+- Notificação cria a identidade da oferta e só abre o POP driver quando ele não está em primeiro plano.
+- Durante uma corrida, a busca rola rapidamente até exibir o novo cartão.
 - Marcador acessível direciona o gesto automaticamente.
 - Calibração preservada funciona como fallback quando o texto não aparece na árvore.
-- Uma identidade gera no máximo um gesto em dois minutos.
+- Uma identidade gera um gesto inicial e, somente se o cartão não responder, uma repetição mais longa.
+- A duração começa em 1.600 ms sem atraso e aprende pela resposta do cartão.
 - Configuração calibrada permanece ativa entre reinícios.
 - Sem backend, login próprio, telemetria ou armazenamento do conteúdo da corrida.
 
 ## Entrega
 
-A versão 0.4.0 substitui a hipótese `aceitar`, remove teste/assistido da interface e implementa a sequência real notificação → cartão → toque prolongado. A esteira do GitHub é a fonte de validação de TypeScript, testes, lint, prebuild, Kotlin/Gradle, assinatura e APK.
+A versão 0.5.0 mantém o fluxo real da 0.4.0 e acrescenta abertura consciente da janela, rolagem de ofertas em fila, latência reduzida e pressão adaptativa. A esteira do GitHub é a fonte de validação de TypeScript, testes, lint, prebuild, Kotlin/Gradle, assinatura e APK.

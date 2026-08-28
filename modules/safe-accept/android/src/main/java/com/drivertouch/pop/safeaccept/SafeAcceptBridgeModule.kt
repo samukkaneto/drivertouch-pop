@@ -59,6 +59,7 @@ class SafeAcceptBridgeModule : Module() {
         "notificationListenerEnabled" to isNotificationListenerEnabled(),
         "recentOfferNotification" to SafeAcceptStore.recentOfferNotification(context),
         "armed" to config.armed,
+        "effectiveDurationMs" to config.longPressDurationMs,
         "lastNativeEvent" to SafeAcceptStore.lastEvent(context)
       )
     }

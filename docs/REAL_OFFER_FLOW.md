@@ -15,17 +15,21 @@ O cartão ocupa aproximadamente a parte superior da tela. Não existe botão de 
 ```text
 notificação do pacote oficial
         ↓ frase exata reconhecida
-identidade privada da oferta + abrir contentIntent
+identidade privada da oferta + verificar janela ativa
         ↓
 POP driver em primeiro plano
         ↓
+já estava aberto? ── sim ──> não executar abertura
+        ↓
 marcador do cartão acessível? ── sim ──> centro do marcador
         │
-        não, após 5 segundos
+        não ──> rolagem rápida até oito vezes
         ↓
 ponto calibrado dentro do cartão
         ↓
-toque prolongado único
+toque prolongado adaptativo
+        ↓
+cartão mudou? ── não ──> aumentar 150 ms e repetir uma vez
 ```
 
 O endereço participa somente de um hash transitório que distingue ofertas; o texto não é persistido. Atualizações repetidas da mesma notificação ficam bloqueadas por dois minutos. Uma nova viagem com conteúdo diferente, inclusive em fila durante uma corrida, recebe outra identidade e pode gerar outro gesto.
@@ -34,6 +38,6 @@ O endereço participa somente de um hash transitório que distingue ofertas; o t
 
 - Nunca executar gesto fora da janela do pacote `br.com.popmove.driver`.
 - Nunca usar uma notificação genérica de corrida; somente a frase real observada.
-- Nunca repetir continuamente toque ou rolagem.
+- Nunca repetir continuamente: no máximo oito rolagens e uma repetição do toque por oferta.
 - Preferir o centro do marcador acessível; usar calibração somente como fallback da notificação real.
 - Manter um desligamento imediato no painel e a revogação completa nas configurações Android.

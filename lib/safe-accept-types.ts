@@ -23,7 +23,7 @@ export type NativeEventRecord = {
 };
 
 export type SafeAcceptSettings = {
-  schemaVersion: 3;
+  schemaVersion: 4;
   appTarget: "popmove";
   mode: AssistMode;
   isArmed: boolean;
@@ -35,12 +35,12 @@ export type SafeAcceptSettings = {
 };
 
 export const DEFAULT_SETTINGS: SafeAcceptSettings = {
-  schemaVersion: 3,
+  schemaVersion: 4,
   appTarget: "popmove",
   mode: "assist",
   isArmed: false,
-  longPressDurationMs: 2000,
-  detectionDelayMs: 400,
+  longPressDurationMs: 1600,
+  detectionDelayMs: 0,
   acceptMarker: "pressione e segure para atender",
   calibration: null,
   events: [],
@@ -126,20 +126,28 @@ export function sanitizeSettings(value: unknown): SafeAcceptSettings {
       : DEFAULT_SETTINGS.acceptMarker;
   const marker =
     candidateMarker === "aceitar" ? DEFAULT_SETTINGS.acceptMarker : candidateMarker;
+  const usesLegacyTiming =
+    candidate.schemaVersion !== 4 &&
+    candidate.longPressDurationMs === 2000 &&
+    candidate.detectionDelayMs === 400;
 
   return {
-    schemaVersion: 3,
+    schemaVersion: 4,
     appTarget: "popmove",
     mode,
     isArmed: Boolean(calibration && mode === "assist"),
     longPressDurationMs: numberInRange(
-      candidate.longPressDurationMs,
+      usesLegacyTiming
+        ? DEFAULT_SETTINGS.longPressDurationMs
+        : candidate.longPressDurationMs,
       500,
       4000,
       DEFAULT_SETTINGS.longPressDurationMs,
     ),
     detectionDelayMs: numberInRange(
-      candidate.detectionDelayMs,
+      usesLegacyTiming
+        ? DEFAULT_SETTINGS.detectionDelayMs
+        : candidate.detectionDelayMs,
       0,
       3000,
       DEFAULT_SETTINGS.detectionDelayMs,

@@ -15,6 +15,7 @@
 - Uma captura de tela mostra o visual, mas não revela quais textos o POP driver publica na árvore de Acessibilidade. Por isso existe o fallback notificação real + ponto calibrado.
 - O `contentIntent` da notificação é a forma correta de abrir o aplicativo, porém fabricantes podem aplicar restrições adicionais a atividades em segundo plano.
 - A conclusão de `dispatchGesture` confirma que o Android executou o toque; somente a mudança de estado do POP driver confirma que o servidor aceitou a viagem.
+- O aprendizado observa a resposta aos toques automáticos. Medir silenciosamente o toque manual dentro de outro aplicativo exigiria interceptá-lo e atrapalharia o próprio aceite.
 - A APK atual é `arm64-v8a` e assinada para instalação direta, não para publicação em loja.
 - O DriverTouch depende das duas permissões permanecerem habilitadas e de o Android não restringir sua bateria em segundo plano.
 

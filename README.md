@@ -2,7 +2,7 @@
 
 Aplicativo Android local que aceita automaticamente novas viagens no **POP driver** para reduzir a interação manual do motorista.
 
-## Estado atual — versão 0.4.0
+## Estado atual — versão 0.5.0
 
 O fluxo foi alinhado com capturas reais do POP driver feitas em 28/08/2026:
 
@@ -19,11 +19,12 @@ Não existe modo de teste. Depois que há calibração e a execução está liga
 
 1. O listener recebe somente notificações do pacote oficial do POP driver.
 2. A frase real da notificação cria uma identidade local da viagem sem salvar endereço ou texto.
-3. O `contentIntent` da notificação abre o POP driver, inclusive quando chega uma oferta durante outra corrida.
-4. O serviço procura `PRESSIONE E SEGURE PARA ATENDER` na árvore de acessibilidade.
-5. Quando o texto está acessível, o centro do próprio elemento define o ponto do toque.
-6. Quando o texto não está acessível, a notificação confirmada autoriza o ponto já calibrado após cinco segundos, sempre com a janela do POP driver em primeiro plano.
-7. A identidade da notificação ou do cartão impede repetir o gesto na mesma oferta.
+3. Se o POP driver já está em primeiro plano, nenhuma abertura é executada. Caso contrário, o `contentIntent` leva o app à oferta.
+4. O serviço procura imediatamente `PRESSIONE E SEGURE PARA ATENDER` na árvore de acessibilidade.
+5. Durante outra corrida, faz uma busca limitada de até oito rolagens rápidas e interrompe a rolagem assim que o cartão aparece.
+6. Quando o texto está acessível, o centro do próprio elemento define o ponto do toque; quando não está, a notificação forte autoriza o ponto calibrado após a busca.
+7. A pressão começa em 1.600 ms sem atraso artificial. O cartão é observado depois do gesto: se permanecer igual, o serviço aumenta a duração e repete uma vez; após três sucessos, reduz 25 ms até o piso seguro.
+8. A identidade da notificação ou do cartão impede repetir o fluxo na mesma oferta.
 
 ## Instalação
 

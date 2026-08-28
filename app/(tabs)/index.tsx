@@ -25,6 +25,9 @@ export default function PanelScreen() {
   const { settings, isLoading, setArmed, disableNow } = useSafeAccept();
   const [nativeEnabled, setNativeEnabled] = useState(false);
   const [notificationEnabled, setNotificationEnabled] = useState(false);
+  const [effectiveDuration, setEffectiveDuration] = useState(
+    settings.longPressDurationMs,
+  );
   const [lastNativeEvent, setLastNativeEvent] = useState<string | null>(null);
   const readiness = getReadiness(settings);
 
@@ -34,14 +37,16 @@ export default function PanelScreen() {
         .then((status) => {
           setNativeEnabled(status.serviceEnabled);
           setNotificationEnabled(status.notificationListenerEnabled);
+          setEffectiveDuration(status.effectiveDurationMs);
           setLastNativeEvent(status.lastNativeEvent);
         })
         .catch(() => {
           setNativeEnabled(false);
           setNotificationEnabled(false);
+          setEffectiveDuration(settings.longPressDurationMs);
           setLastNativeEvent(null);
         });
-    }, []),
+    }, [settings.longPressDurationMs]),
   );
 
   if (isLoading) {
@@ -107,7 +112,7 @@ export default function PanelScreen() {
           </Text>
           <Text style={styles.modeText}>
             {isActive
-              ? "A notificação abre o Pop Driver; o cartão real dispara o toque prolongado."
+              ? "Reconhecimento imediato, rolagem de fila e toque prolongado adaptativo."
               : "Nenhuma corrida será aceita automaticamente."}
           </Text>
         </View>
@@ -148,8 +153,8 @@ export default function PanelScreen() {
           value={notificationEnabled ? "Habilitadas" : "Aguardando ativação"}
         />
         <KeyValue
-          label="Duração"
-          value={`${settings.longPressDurationMs} ms`}
+          label="Duração aprendida"
+          value={`${effectiveDuration} ms`}
         />
         <KeyValue
           label="Último evento nativo"
@@ -184,8 +189,8 @@ export default function PanelScreen() {
         <MaterialIcons color="#475467" name="info-outline" size={18} />
         <Text style={styles.noteText}>
           A oferta é confirmada pelo texto “PRESSIONE E SEGURE PARA ATENDER”.
-          O acesso às notificações permite abrir também uma nova viagem que
-          chegue enquanto outra corrida estiver em andamento.
+          Quando outra corrida chega durante uma viagem, o serviço rola até o
+          cartão aparecer; se o POP driver já está aberto, não tenta abri-lo de novo.
         </Text>
       </View>
     </ScrollView>

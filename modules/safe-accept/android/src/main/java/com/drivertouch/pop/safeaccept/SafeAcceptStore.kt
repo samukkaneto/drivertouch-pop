@@ -16,6 +16,11 @@ data class SafeAcceptConfig(
   val acceptMarker: String
 )
 
+data class GestureLearningResult(
+  val durationMs: Long,
+  val changed: Boolean
+)
+
 object SafeAcceptStore {
   private const val PREFS = "drivertouch_pop_native"
   private const val KEY_ARMED = "armed"
@@ -35,10 +40,18 @@ object SafeAcceptStore {
   private const val KEY_OFFER_NOTIFICATION_SEQUENCE = "offer_notification_sequence"
   private const val KEY_HANDLED_OFFER_IDENTITY = "handled_offer_identity"
   private const val KEY_HANDLED_OFFER_AT = "handled_offer_at"
+  private const val KEY_LEARNED_DURATION = "learned_duration"
+  private const val KEY_LEARNING_SUCCESS_STREAK = "learning_success_streak"
+  private const val KEY_SPEED_PROFILE_MIGRATED = "speed_profile_migrated_v1"
   private const val MAX_EVENTS = 50
+  private const val DEFAULT_DURATION_MS = 1600L
+  private const val DEFAULT_DELAY_MS = 0L
+  private const val MIN_ADAPTIVE_DURATION_MS = 1450L
+  private const val MAX_DURATION_MS = 4000L
 
   fun load(context: Context): SafeAcceptConfig {
     val preferences = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+    migrateSpeedProfile(preferences)
     val x = preferences.getFloat(KEY_X, -1f)
     val y = preferences.getFloat(KEY_Y, -1f)
     val storedMode = preferences.getString(KEY_MODE, "assist") ?: "assist"
@@ -49,8 +62,10 @@ object SafeAcceptStore {
       mode = mode,
       x = x,
       y = y,
-      longPressDurationMs = preferences.getLong(KEY_DURATION, 2000L),
-      detectionDelayMs = preferences.getLong(KEY_DELAY, 400L),
+      longPressDurationMs = preferences
+        .getLong(KEY_LEARNED_DURATION, preferences.getLong(KEY_DURATION, DEFAULT_DURATION_MS))
+        .coerceIn(500L, MAX_DURATION_MS),
+      detectionDelayMs = preferences.getLong(KEY_DELAY, DEFAULT_DELAY_MS),
       acceptMarker = preferences
         .getString(KEY_MARKER, "pressione e segure para atender")
         ?.trim()
@@ -70,15 +85,75 @@ object SafeAcceptStore {
     acceptMarker: String
   ) {
     val safeMode = if (mode == "off") "off" else "assist"
-    context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+    val preferences = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+    migrateSpeedProfile(preferences)
+    val safeDuration = longPressDurationMs.coerceIn(500, MAX_DURATION_MS.toInt()).toLong()
+    val durationChanged = preferences.getLong(KEY_DURATION, DEFAULT_DURATION_MS) != safeDuration
+    val editor = preferences.edit()
       .putBoolean(KEY_ARMED, armed && safeMode == "assist")
       .putString(KEY_MODE, safeMode)
       .putFloat(KEY_X, x.coerceIn(0.0, 1.0).toFloat())
       .putFloat(KEY_Y, y.coerceIn(0.0, 1.0).toFloat())
-      .putLong(KEY_DURATION, longPressDurationMs.coerceIn(500, 4000).toLong())
+      .putLong(KEY_DURATION, safeDuration)
       .putLong(KEY_DELAY, detectionDelayMs.coerceIn(0, 3000).toLong())
       .putString(KEY_MARKER, acceptMarker.trim().lowercase(Locale.ROOT).take(80))
+    if (durationChanged || !preferences.contains(KEY_LEARNED_DURATION)) {
+      editor
+        .putLong(KEY_LEARNED_DURATION, safeDuration)
+        .putInt(KEY_LEARNING_SUCCESS_STREAK, 0)
+    }
+    editor.apply()
+  }
+
+  private fun migrateSpeedProfile(preferences: android.content.SharedPreferences) {
+    if (preferences.getBoolean(KEY_SPEED_PROFILE_MIGRATED, false)) return
+    val storedDuration = preferences.getLong(KEY_DURATION, 2000L)
+    val storedDelay = preferences.getLong(KEY_DELAY, 400L)
+    val migratedDuration = if (storedDuration == 2000L) DEFAULT_DURATION_MS else storedDuration
+    val migratedDelay = if (storedDelay == 400L) DEFAULT_DELAY_MS else storedDelay
+    preferences.edit()
+      .putLong(KEY_DURATION, migratedDuration)
+      .putLong(KEY_DELAY, migratedDelay)
+      .putLong(KEY_LEARNED_DURATION, migratedDuration)
+      .putInt(KEY_LEARNING_SUCCESS_STREAK, 0)
+      .putBoolean(KEY_SPEED_PROFILE_MIGRATED, true)
+      .commit()
+  }
+
+  @Synchronized
+  fun recordGestureSuccess(context: Context, successfulDurationMs: Long): GestureLearningResult {
+    val preferences = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+    val configuredDuration = preferences.getLong(KEY_DURATION, DEFAULT_DURATION_MS)
+    val currentDuration = preferences
+      .getLong(KEY_LEARNED_DURATION, successfulDurationMs)
+      .coerceIn(500L, MAX_DURATION_MS)
+    val nextStreak = preferences.getInt(KEY_LEARNING_SUCCESS_STREAK, 0) + 1
+    val floor = minOf(MIN_ADAPTIVE_DURATION_MS, configuredDuration)
+    val nextDuration = if (nextStreak >= 3) {
+      (minOf(currentDuration, successfulDurationMs) - 25L).coerceAtLeast(floor)
+    } else {
+      currentDuration
+    }
+    preferences.edit()
+      .putLong(KEY_LEARNED_DURATION, nextDuration)
+      .putInt(KEY_LEARNING_SUCCESS_STREAK, if (nextStreak >= 3) 0 else nextStreak)
       .apply()
+    return GestureLearningResult(nextDuration, nextDuration != currentDuration)
+  }
+
+  @Synchronized
+  fun recordGestureFailure(context: Context, failedDurationMs: Long): GestureLearningResult {
+    val preferences = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+    val currentDuration = preferences
+      .getLong(KEY_LEARNED_DURATION, failedDurationMs)
+      .coerceIn(500L, MAX_DURATION_MS)
+    val nextDuration = (maxOf(currentDuration, failedDurationMs) + 150L)
+      .coerceAtMost(MAX_DURATION_MS)
+    preferences.edit()
+      .putLong(KEY_LEARNED_DURATION, nextDuration)
+      .putInt(KEY_LEARNING_SUCCESS_STREAK, 0)
+      .apply()
+    return GestureLearningResult(nextDuration, nextDuration != currentDuration)
   }
 
   fun disable(context: Context) {
@@ -198,6 +273,16 @@ object SafeAcceptStore {
     if (!recentOfferNotification(context)) return null
     return context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
       .getString(KEY_OFFER_NOTIFICATION_FINGERPRINT, null)
+  }
+
+  @Synchronized
+  fun completeOfferNotification(context: Context, fingerprint: String) {
+    val preferences = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+    if (preferences.getString(KEY_OFFER_NOTIFICATION_FINGERPRINT, null) != fingerprint) return
+    preferences.edit()
+      .remove(KEY_OFFER_NOTIFICATION_FINGERPRINT)
+      .remove(KEY_OFFER_NOTIFICATION_AT)
+      .apply()
   }
 
   @Synchronized

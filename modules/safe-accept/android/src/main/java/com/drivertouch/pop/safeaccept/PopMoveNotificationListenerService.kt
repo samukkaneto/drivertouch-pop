@@ -7,8 +7,9 @@ import android.service.notification.StatusBarNotification
 import java.text.Normalizer
 
 /**
- * Reconhece o aviso real do PopDriver, leva o aplicativo ao primeiro plano e
- * acorda o serviço de acessibilidade. O texto e os endereços nunca são salvos.
+ * Reconhece o aviso real do PopDriver, acorda o serviço de acessibilidade e só
+ * leva o aplicativo ao primeiro plano quando ele ainda não está aberto. O texto
+ * e os endereços nunca são salvos.
  */
 class PopMoveNotificationListenerService : NotificationListenerService() {
   override fun onListenerConnected() {
@@ -36,33 +37,36 @@ class PopMoveNotificationListenerService : NotificationListenerService() {
     val fingerprint = Integer.toHexString(stableNotificationText.hashCode())
     if (!SafeAcceptStore.markOfferNotification(this, fingerprint)) return
 
-    SafeAcceptStore.record(
-      this,
-      "notification",
-      "Nova viagem reconhecida pela notificação real do PopDriver"
-    )
-
     val config = SafeAcceptStore.load(this)
     if (!config.armed || config.mode == "off") {
       SafeAcceptStore.record(this, "system", "Nova viagem detectada; execução automática está desligada")
       return
     }
 
-    val openedFromNotification = runCatching {
-      val pendingIntent = sbn.notification.contentIntent ?: return@runCatching false
-      pendingIntent.send()
-      true
-    }.getOrDefault(false)
+    val alreadyOpen = PopMoveAccessibilityService.isPopDriverWindowActive()
+    val foregroundAction = if (!alreadyOpen) {
+      val openedFromNotification = runCatching {
+        val pendingIntent = sbn.notification.contentIntent ?: return@runCatching false
+        pendingIntent.send()
+        true
+      }.getOrDefault(false)
 
-    if (!openedFromNotification) {
-      packageManager.getLaunchIntentForPackage(PopMoveAccessibilityService.POP_DRIVER_PACKAGE)?.let { intent ->
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
-        startActivity(intent)
+      if (!openedFromNotification) {
+        packageManager.getLaunchIntentForPackage(PopMoveAccessibilityService.POP_DRIVER_PACKAGE)?.let { intent ->
+          intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
+          startActivity(intent)
+        }
       }
+      "PopDriver trazido ao primeiro plano"
+    } else {
+      "PopDriver já aberto; abertura redundante ignorada"
     }
-
-    SafeAcceptStore.record(this, "system", "PopDriver aberto para atender a nova viagem")
-    PopMoveAccessibilityService.onOfferNotification()
+    PopMoveAccessibilityService.onOfferNotification(alreadyOpen)
+    SafeAcceptStore.record(
+      this,
+      "notification",
+      "Nova viagem reconhecida; $foregroundAction"
+    )
   }
 
   override fun onNotificationRemoved(sbn: StatusBarNotification) {

@@ -17,7 +17,7 @@ export default function SettingsScreen() {
   function save() {
     const longPressDurationMs = Math.min(
       4000,
-      Math.max(500, Number(duration) || 2000),
+      Math.max(500, Number(duration) || 1600),
     );
     const detectionDelayMs = Math.min(3000, Math.max(0, Number(delay) || 0));
     setTuning({
@@ -76,7 +76,8 @@ export default function SettingsScreen() {
         </View>
         <Text style={styles.helper}>
           A frase observada no Pop Driver é “PRESSIONE E SEGURE PARA ATENDER”.
-          O serviço só executa o gesto quando essa oferta aparece.
+          O serviço começa sem atraso e ajusta automaticamente a duração pela
+          resposta real do cartão.
         </Text>
       </SectionCard>
 

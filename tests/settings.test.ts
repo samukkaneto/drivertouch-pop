@@ -57,4 +57,16 @@ describe("settings migration and safety", () => {
     expect(settings.mode).toBe("assist");
     expect(settings.isArmed).toBe(true);
   });
+
+  it("migrates the slow legacy timing to the immediate adaptive profile", () => {
+    const settings = sanitizeSettings({
+      schemaVersion: 3,
+      longPressDurationMs: 2000,
+      detectionDelayMs: 400,
+    });
+
+    expect(settings.schemaVersion).toBe(4);
+    expect(settings.longPressDurationMs).toBe(1600);
+    expect(settings.detectionDelayMs).toBe(0);
+  });
 });

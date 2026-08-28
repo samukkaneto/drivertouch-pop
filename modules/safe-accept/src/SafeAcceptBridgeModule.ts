@@ -6,6 +6,7 @@ export type NativeServiceStatus = {
   lastNativeEvent: string | null;
   notificationListenerEnabled: boolean;
   recentOfferNotification: boolean;
+  effectiveDurationMs: number;
 };
 
 export type NativeEventRecord = {
