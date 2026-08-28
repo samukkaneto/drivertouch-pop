@@ -12,7 +12,7 @@
 - [x] Distinguir novas viagens por identidade, inclusive em fila
 - [x] Remover o modo de teste e manter execução calibrada entre reinícios
 - [x] Manter desligamento imediato e revogação Android
-- [ ] Compilar e publicar a APK 0.4.0 de execução
+- [x] Compilar e publicar a APK 0.4.0 de execução
 
 ## Evidência do aparelho
 
