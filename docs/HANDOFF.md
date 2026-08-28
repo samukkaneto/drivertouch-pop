@@ -24,3 +24,5 @@ Capturas de 28/08/2026 confirmaram que não há botão de aceite. A tela ociosa 
 ## Entrega
 
 A versão 0.5.0 mantém o fluxo real da 0.4.0 e acrescenta abertura consciente da janela, rolagem de ofertas em fila, latência reduzida e pressão adaptativa. A esteira do GitHub é a fonte de validação de TypeScript, testes, lint, prebuild, Kotlin/Gradle, assinatura e APK.
+
+Build aprovado no GitHub Actions em 28/08/2026: execução `33167890429`, commit de implementação `9c84e36`, pacote `com.drivertouch.pop`, `versionCode 5` e assinatura compatível com a 0.4.0.

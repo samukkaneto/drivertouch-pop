@@ -28,7 +28,7 @@ Não existe modo de teste. Depois que há calibração e a execução está liga
 
 ## Instalação
 
-1. Instale a APK independente `arm64-v8a`.
+1. Instale a APK universal independente (inclui `arm64-v8a`).
 2. Habilite **DriverTouch Pop** em Acessibilidade.
 3. Habilite **DriverTouch Pop - Notificações** no acesso a notificações.
 4. Preserve a calibração existente ou marque um ponto dentro do cartão da viagem.
