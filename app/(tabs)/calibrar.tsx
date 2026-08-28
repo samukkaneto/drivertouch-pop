@@ -33,7 +33,7 @@ export default function CalibrationScreen() {
     String(settings.calibration?.y ?? "0.30"),
   );
   const [message, setMessage] = useState(
-    "Toque no quadro abaixo ou informe os valores normalizados.",
+    "Marque a posição aproximada da frase de aceite.",
   );
   const [gridSize, setGridSize] = useState({ width: 0, height: 0 });
   const [nativeEnabled, setNativeEnabled] = useState(false);
@@ -50,7 +50,7 @@ export default function CalibrationScreen() {
           setYInput(pending.y.toFixed(3));
           setCalibration(pending.x, pending.y);
           setMessage(
-            "Ponto capturado sobre o POP driver e salvo neste aparelho.",
+            "Referência da frase capturada no POP driver e salva neste aparelho.",
           );
         })
         .catch(() => undefined);
@@ -75,7 +75,7 @@ export default function CalibrationScreen() {
       return;
     }
     setCalibration(parsedPoint.x, parsedPoint.y);
-    setMessage("Calibração salva no aparelho.");
+    setMessage("Referência salva no aparelho.");
   }
 
   async function beginGuidedCalibration() {
@@ -109,10 +109,10 @@ export default function CalibrationScreen() {
       showsVerticalScrollIndicator={false}
     >
       <View style={styles.header}>
-        <Text style={styles.title}>Calibrar toque</Text>
+        <Text style={styles.title}>Calibrar frase de aceite</Text>
         <Text style={styles.subtitle}>
-          Defina um ponto seguro dentro do cartão da viagem. Os valores são
-          relativos ao tamanho da tela.
+          Marque “PRESSIONE E SEGURE PARA ATENDER”. Durante a execução, o
+          DriverTouch relocaliza a frase visível e nunca toca na barra do Android.
         </Text>
       </View>
 
@@ -120,7 +120,7 @@ export default function CalibrationScreen() {
         <Text style={styles.helper}>
           O DriverTouch abrirá o POP driver com um pequeno controle flutuante.
           Prepare a tela desejada, toque em “Marcar agora” e depois toque no
-          interior do cartão da corrida.
+          texto “PRESSIONE E SEGURE PARA ATENDER”.
         </Text>
         <ActionButton
           label="Calibrar sobre o POP driver"
@@ -134,7 +134,7 @@ export default function CalibrationScreen() {
         ) : null}
       </SectionCard>
 
-      <SectionCard title="Ponto de referência">
+      <SectionCard title="Referência da frase">
         <View style={styles.gridWrap}>
           <Pressable
             accessibilityLabel="Área de calibração"
@@ -175,7 +175,7 @@ export default function CalibrationScreen() {
               ]}
             />
             <Text style={styles.gridHint}>
-              Toque na posição aproximada{`\n`}do cartão da viagem
+              Toque na posição aproximada{`\n`}da frase de aceite
             </Text>
           </Pressable>
         </View>
@@ -219,7 +219,7 @@ export default function CalibrationScreen() {
         </Text>
       </SectionCard>
 
-      <ActionButton label="Salvar calibração" icon="save" onPress={save} />
+      <ActionButton label="Salvar referência" icon="save" onPress={save} />
       <ActionButton
         label="Voltar ao painel"
         icon="arrow-back"

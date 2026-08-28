@@ -121,7 +121,7 @@ export default function PanelScreen() {
             <Text style={styles.switchTitle}>Aceitar corridas automaticamente</Text>
             <Text style={styles.switchText}>
               {!settings.calibration
-                ? "Calibre o ponto primeiro."
+                ? "Calibre a frase de aceite primeiro."
                 : !nativeEnabled
                   ? "Ative o serviço Android primeiro."
                   : "Permanece ativa até você desligar."}
@@ -145,8 +145,8 @@ export default function PanelScreen() {
           value={nativeEnabled ? "Habilitado" : "Aguardando ativação"}
         />
         <KeyValue
-          label="Ponto de toque"
-          value={settings.calibration ? "Calibrado" : "Pendente"}
+          label="Referência da frase"
+          value={settings.calibration ? "Confirmada" : "Pendente"}
         />
         <KeyValue
           label="Notificações"
@@ -165,7 +165,7 @@ export default function PanelScreen() {
 
       <View style={styles.actions}>
         <ActionButton
-          label={settings.calibration ? "Recalibrar toque" : "Calibrar toque"}
+          label={settings.calibration ? "Recalibrar frase" : "Calibrar frase"}
           icon="my-location"
           onPress={() => router.push("./calibrar")}
         />

@@ -39,7 +39,8 @@ class PopMoveAccessibilityService : AccessibilityService() {
     val markerVisible: Boolean,
     val markerCenterX: Float?,
     val markerCenterY: Float?,
-    val fingerprint: String
+    val fingerprint: String,
+    val safeBounds: Rect
   )
 
   private data class GestureAttempt(
@@ -108,7 +109,7 @@ class PopMoveAccessibilityService : AccessibilityService() {
     if (!snapshot.markerVisible) {
       root.recycle()
       if (allowScroll && notificationFingerprint != null) {
-        attemptOfferScroll(notificationFingerprint)
+        attemptOfferScroll(notificationFingerprint, snapshot.safeBounds)
       }
       return
     }
@@ -126,18 +127,19 @@ class PopMoveAccessibilityService : AccessibilityService() {
       ?: "screen:${snapshot.fingerprint}"
     if (!SafeAcceptStore.claimOfferIdentity(this, identity)) return
 
-    val displayMetrics = resources.displayMetrics
-    val x = snapshot.markerCenterX ?: config.x * displayMetrics.widthPixels
-    val y = snapshot.markerCenterY ?: config.y * displayMetrics.heightPixels
+    val x = snapshot.markerCenterX ?: return
+    val y = snapshot.markerCenterY ?: return
+    if (!containsPoint(snapshot.safeBounds, x, y)) {
+      if (allowScroll && notificationFingerprint != null) {
+        attemptOfferScroll(notificationFingerprint, snapshot.safeBounds)
+      }
+      return
+    }
     lastGestureAt = now
     SafeAcceptStore.record(
       this,
       "gesture",
-      if (snapshot.markerVisible && snapshot.markerCenterX != null) {
-        "Oferta real localizada; toque longo direcionado pelo cartão"
-      } else {
-        "Frase real localizada; toque longo direcionado pela calibração"
-      }
+      "Frase real visível; toque longo confinado ao cartão da nova viagem"
     )
     dispatchLongPress(
       config,
@@ -154,10 +156,21 @@ class PopMoveAccessibilityService : AccessibilityService() {
 
   private fun dispatchLongPress(config: SafeAcceptConfig, attempt: GestureAttempt) {
     if (gestureInFlight || scrollGestureInFlight) return
+    val safeAttempt = resolveVisibleMarkerAttempt(attempt)
+    if (safeAttempt == null) {
+      offerResolutionInProgress = false
+      SafeAcceptStore.releaseOfferIdentity(this, attempt.identity)
+      SafeAcceptStore.record(
+        this,
+        "gesture",
+        "Pressão impedida: a frase da nova viagem não está visível na área segura"
+      )
+      return
+    }
     offerResolutionInProgress = true
     gestureInFlight = true
     lastGestureAt = System.currentTimeMillis()
-    val path = Path().apply { moveTo(attempt.x, attempt.y) }
+    val path = Path().apply { moveTo(safeAttempt.x, safeAttempt.y) }
     val stroke = GestureDescription.StrokeDescription(
       path,
       config.detectionDelayMs,
@@ -173,9 +186,9 @@ class PopMoveAccessibilityService : AccessibilityService() {
           SafeAcceptStore.record(
             this@PopMoveAccessibilityService,
             "gesture",
-            "Toque prolongado de ${attempt.durationMs} ms concluído no cartão da viagem"
+            "Toque prolongado de ${safeAttempt.durationMs} ms concluído no cartão da viagem"
           )
-          offerHandler.postDelayed({ verifyGestureResult(config, attempt) }, VERIFY_DELAY_MS)
+          offerHandler.postDelayed({ verifyGestureResult(config, safeAttempt) }, VERIFY_DELAY_MS)
         }
 
         override fun onCancelled(gestureDescription: GestureDescription?) {
@@ -273,7 +286,7 @@ class PopMoveAccessibilityService : AccessibilityService() {
     )
   }
 
-  private fun attemptOfferScroll(fingerprint: String) {
+  private fun attemptOfferScroll(fingerprint: String, safeBounds: Rect) {
     if (scrollOfferFingerprint != fingerprint) {
       scrollOfferFingerprint = fingerprint
       exhaustedScrollFingerprint = null
@@ -297,15 +310,24 @@ class PopMoveAccessibilityService : AccessibilityService() {
     if (now - lastScrollAt < MIN_SCROLL_INTERVAL_MS) return
     lastScrollAt = now
     scrollAttempts += 1
-    dispatchVerticalScrollGesture()
+    dispatchVerticalScrollGesture(safeBounds)
   }
 
-  private fun dispatchVerticalScrollGesture() {
-    val metrics = resources.displayMetrics
-    val fixedX = metrics.widthPixels * VERTICAL_SCROLL_X
+  private fun dispatchVerticalScrollGesture(safeBounds: Rect) {
+    if (safeBounds.width() < dp(MIN_SAFE_WIDTH_DP) || safeBounds.height() < dp(MIN_SAFE_HEIGHT_DP)) {
+      SafeAcceptStore.record(
+        this,
+        "gesture",
+        "Rolagem impedida: área útil do POP driver não pôde ser confirmada"
+      )
+      return
+    }
+    val fixedX = safeBounds.left + safeBounds.width() * VERTICAL_SCROLL_X
+    val startY = safeBounds.top + safeBounds.height() * VERTICAL_SCROLL_START_Y
+    val endY = safeBounds.top + safeBounds.height() * VERTICAL_SCROLL_END_Y
     val path = Path().apply {
-      moveTo(fixedX, metrics.heightPixels * VERTICAL_SCROLL_START_Y)
-      lineTo(fixedX, metrics.heightPixels * VERTICAL_SCROLL_END_Y)
+      moveTo(fixedX, startY)
+      lineTo(fixedX, endY)
     }
     val gesture = GestureDescription.Builder()
       .addStroke(GestureDescription.StrokeDescription(path, 0L, SCROLL_DURATION_MS))
@@ -366,9 +388,12 @@ class PopMoveAccessibilityService : AccessibilityService() {
   }
 
   private fun buildScreenSnapshot(root: AccessibilityNodeInfo): ScreenSnapshot {
-    val texts = mutableListOf<String>()
-    var markerBounds: Rect? = null
+    val allTexts = mutableListOf<String>()
+    val visibleTexts = mutableListOf<String>()
+    val exactMarkerBounds = mutableListOf<Rect>()
+    val markerWordBounds = mutableListOf<Rect>()
     val marker = normalize(OFFER_SCREEN_MARKER)
+    val safeBounds = calculateSafeBounds(root)
 
     fun visit(node: AccessibilityNodeInfo) {
       val nodeTexts = listOf(node.text, node.contentDescription)
@@ -377,12 +402,13 @@ class PopMoveAccessibilityService : AccessibilityService() {
         .filter(String::isNotBlank)
 
       for (text in nodeTexts) {
-        texts.add(text)
-        if (markerBounds == null && text.contains(marker)) {
-          val bounds = Rect()
-          node.getBoundsInScreen(bounds)
-          if (!bounds.isEmpty) markerBounds = bounds
-        }
+        allTexts.add(text)
+        if (!node.isVisibleToUser) continue
+
+        val bounds = clippedNodeBounds(node, safeBounds) ?: continue
+        visibleTexts.add(text)
+        if (text.contains(marker)) exactMarkerBounds.add(bounds)
+        if (OFFER_MARKER_WORDS.any { word -> text.contains(word) }) markerWordBounds.add(bounds)
       }
 
       for (index in 0 until node.childCount) {
@@ -396,15 +422,74 @@ class PopMoveAccessibilityService : AccessibilityService() {
     }
 
     visit(root)
-    val joinedText = texts.joinToString(" ")
-    val markerVisible = joinedText.contains(marker)
-    val stableText = texts.distinct().sorted().joinToString("|")
-    val bounds = markerBounds
+    val visibleJoinedText = visibleTexts.joinToString(" ")
+    val phraseIsVisible = visibleJoinedText.contains(marker)
+    val bounds = when {
+      !phraseIsVisible -> null
+      exactMarkerBounds.isNotEmpty() -> exactMarkerBounds.minByOrNull { it.width() * it.height() }
+      else -> unionBounds(markerWordBounds)
+    }
+    val markerVisible = phraseIsVisible && bounds != null && !bounds.isEmpty
+    val stableText = allTexts.distinct().sorted().joinToString("|")
     return ScreenSnapshot(
       markerVisible = markerVisible,
       markerCenterX = bounds?.exactCenterX(),
       markerCenterY = bounds?.exactCenterY(),
-      fingerprint = sha256(stableText)
+      fingerprint = sha256(stableText),
+      safeBounds = Rect(safeBounds)
+    )
+  }
+
+  private fun calculateSafeBounds(root: AccessibilityNodeInfo): Rect {
+    val metrics = resources.displayMetrics
+    val screenBounds = Rect(
+      0,
+      (metrics.heightPixels * SAFE_TOP_RATIO).toInt(),
+      metrics.widthPixels,
+      (metrics.heightPixels * SAFE_BOTTOM_RATIO).toInt()
+    )
+    val rootBounds = Rect()
+    root.getBoundsInScreen(rootBounds)
+    if (rootBounds.isEmpty || !rootBounds.intersect(screenBounds)) return screenBounds
+    return rootBounds
+  }
+
+  private fun clippedNodeBounds(node: AccessibilityNodeInfo, safeBounds: Rect): Rect? {
+    val bounds = Rect()
+    node.getBoundsInScreen(bounds)
+    if (bounds.isEmpty || !bounds.intersect(safeBounds) || bounds.isEmpty) return null
+    return bounds
+  }
+
+  private fun unionBounds(bounds: List<Rect>): Rect? {
+    if (bounds.isEmpty()) return null
+    return Rect(bounds.first()).also { result ->
+      bounds.drop(1).forEach { next -> result.union(next) }
+    }
+  }
+
+  private fun containsPoint(bounds: Rect, x: Float, y: Float): Boolean {
+    return x >= bounds.left && x < bounds.right && y >= bounds.top && y < bounds.bottom
+  }
+
+  private fun resolveVisibleMarkerAttempt(attempt: GestureAttempt): GestureAttempt? {
+    val root = rootInActiveWindow ?: return null
+    if (root.packageName?.toString() != POP_DRIVER_PACKAGE) {
+      root.recycle()
+      return null
+    }
+    val snapshot = try {
+      buildScreenSnapshot(root)
+    } finally {
+      root.recycle()
+    }
+    val x = snapshot.markerCenterX ?: return null
+    val y = snapshot.markerCenterY ?: return null
+    if (!snapshot.markerVisible || !containsPoint(snapshot.safeBounds, x, y)) return null
+    return attempt.copy(
+      screenFingerprint = snapshot.fingerprint,
+      x = x,
+      y = y
     )
   }
 
@@ -479,7 +564,7 @@ class PopMoveAccessibilityService : AccessibilityService() {
     }
     panel.addView(
       TextView(this).apply {
-        text = "Abra a tela de oferta e toque em MARCAR AGORA."
+        text = "Abra a oferta até mostrar PRESSIONE E SEGURE PARA ATENDER e toque em MARCAR AGORA."
         setTextColor(Color.WHITE)
         textSize = 14f
       },
@@ -533,7 +618,7 @@ class PopMoveAccessibilityService : AccessibilityService() {
       isClickable = true
     }
     val instruction = TextView(this).apply {
-      text = "Toque em qualquer ponto seguro dentro do cartão da viagem"
+      text = "Toque sobre a frase PRESSIONE E SEGURE PARA ATENDER"
       gravity = Gravity.CENTER
       setTextColor(Color.WHITE)
       setBackgroundColor(Color.rgb(16, 24, 40))
@@ -609,13 +694,18 @@ class PopMoveAccessibilityService : AccessibilityService() {
   companion object {
     const val POP_DRIVER_PACKAGE = "br.com.popmove.driver"
     const val OFFER_SCREEN_MARKER = "pressione e segure para atender"
-    private const val MAX_SCROLL_ATTEMPTS = 8
-    private const val MIN_SCROLL_INTERVAL_MS = 60L
-    private const val AFTER_SCROLL_SCAN_DELAY_MS = 20L
-    private const val SCROLL_DURATION_MS = 80L
-    private const val VERTICAL_SCROLL_X = 0.5f
-    private const val VERTICAL_SCROLL_START_Y = 0.80f
-    private const val VERTICAL_SCROLL_END_Y = 0.24f
+    private val OFFER_MARKER_WORDS = listOf("pressione", "segure", "atender")
+    private const val MAX_SCROLL_ATTEMPTS = 3
+    private const val MIN_SCROLL_INTERVAL_MS = 140L
+    private const val AFTER_SCROLL_SCAN_DELAY_MS = 45L
+    private const val SCROLL_DURATION_MS = 120L
+    private const val VERTICAL_SCROLL_X = 0.72f
+    private const val VERTICAL_SCROLL_START_Y = 0.78f
+    private const val VERTICAL_SCROLL_END_Y = 0.20f
+    private const val SAFE_TOP_RATIO = 0.04f
+    private const val SAFE_BOTTOM_RATIO = 0.88f
+    private const val MIN_SAFE_WIDTH_DP = 120
+    private const val MIN_SAFE_HEIGHT_DP = 240
     private const val VERIFY_DELAY_MS = 350L
     private const val RETRY_DELAY_MS = 60L
     private const val POST_GESTURE_SCAN_DELAY_MS = 30L

@@ -21,13 +21,13 @@ POP driver em primeiro plano
         ↓
 já estava aberto? ── sim ──> não executar abertura
         ↓
-marcador do cartão acessível? ── sim ──> centro do marcador
+marcador visível na área segura? ── sim ──> validar novamente o centro
         │
-        não ──> rolagem rápida até oito vezes
+        não ──> arrasto de baixo para cima até três vezes
         ↓
 frase apareceu? ── não ──> encerrar sem pressionar
         │
-        sim ──> centro da frase ou ponto calibrado
+        sim ──> centro atual da frase visível
         ↓
 toque prolongado adaptativo
         ↓
@@ -40,6 +40,7 @@ O endereço participa somente de um hash transitório que distingue ofertas; o t
 
 - Nunca executar gesto fora da janela do pacote `br.com.popmove.driver`.
 - Nunca usar uma notificação genérica de corrida; somente a frase real observada.
-- Nunca repetir continuamente: no máximo oito rolagens e uma repetição do toque por oferta.
-- Preferir o centro da frase acessível; usar a calibração somente após a frase completa estar confirmada.
+- Nunca repetir continuamente: no máximo três rolagens e uma repetição do toque por oferta.
+- Nunca usar a coordenada calibrada como destino automático; pressionar somente o centro da frase visível dentro da área segura.
+- Nunca iniciar um gesto na barra de navegação: a área automática termina em 88% da altura física.
 - Manter um desligamento imediato no painel e a revogação completa nas configurações Android.

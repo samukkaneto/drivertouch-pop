@@ -24,10 +24,12 @@ O aplicativo Expo configura e exibe o estado. A operação fica inteiramente no 
 - Tela ociosa conhecida: `Aguarde uma solicitação`.
 - O listener consulta a janela ativa e não abre o POP driver quando ele já está em primeiro plano.
 - As leituras começam em 0 ms; não existe atraso fixo de reconhecimento.
-- Se o marcador estiver acessível, suas coordenadas prevalecem sobre a calibração.
-- Se a viagem chegou durante outra corrida, o serviço usa exclusivamente um gesto vertical reto: X fixo em 50% da largura, de 80% para 24% da altura, em 80 ms. São no máximo oito tentativas.
+- O marcador só é aceito quando `isVisibleToUser` e seus limites intersectam a área segura da janela do POP driver.
+- Se a viagem chegou durante outra corrida, o serviço usa exclusivamente um arrasto reto de baixo para cima: X fixo em 72% da área útil, de 78% para 20% da altura útil, em 120 ms. São no máximo três tentativas.
 - `ACTION_SCROLL_FORWARD` não é usado porque o primeiro contêiner rolável pode ser horizontal.
-- Se a frase completa não estiver acessível depois da busca, o fluxo termina sem pressão. A calibração só fornece a coordenada quando a frase já foi confirmada, mas seus limites não estão disponíveis.
+- A área segura termina em 88% da altura física, antes da navegação do Android. Isso vale tanto para a rolagem quanto para o toque.
+- Se a frase completa não estiver visível depois da busca, o fluxo termina sem pressão. Não existe retorno automático para a coordenada calibrada.
+- Antes de cada pressão, a árvore é relida e o centro atual da frase é validado novamente. Assim uma coordenada fora da tela nunca alcança Início/Google Assistente/Gemini.
 
 ## Velocidade e aprendizado
 

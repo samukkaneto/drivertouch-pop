@@ -2,7 +2,7 @@
 
 Aplicativo Android local que aceita automaticamente novas viagens no **POP driver** para reduzir a interação manual do motorista.
 
-## Estado atual — versão 0.6.0
+## Estado atual — versão 0.7.0
 
 O fluxo foi alinhado com capturas reais do POP driver feitas em 28/08/2026:
 
@@ -20,10 +20,10 @@ Não existe modo de teste. Depois que há calibração e a execução está liga
 1. O listener recebe somente notificações do pacote oficial do POP driver.
 2. A frase real da notificação cria uma identidade local da viagem sem salvar endereço ou texto.
 3. Se o POP driver já está em primeiro plano, nenhuma abertura é executada. Caso contrário, o `contentIntent` leva o app à oferta.
-4. O serviço procura imediatamente `PRESSIONE E SEGURE PARA ATENDER` na árvore de acessibilidade.
-5. Durante outra corrida, faz uma busca limitada de até oito gestos verticais rápidos, sempre com o mesmo eixo X, para visualizar o conteúdo abaixo. Não usa rolagem genérica que possa selecionar um carrossel lateral.
-6. Interrompe a rolagem assim que a frase completa aparece. Sem `PRESSIONE E SEGURE PARA ATENDER` visível, nenhuma pressão é executada.
-7. Quando a frase está acessível, o centro do próprio elemento define o ponto do toque; a calibração só define a coordenada se a frase já foi confirmada, mas o elemento não expõe limites úteis.
+4. O serviço procura imediatamente `PRESSIONE E SEGURE PARA ATENDER`, mas só considera o texto que o Android confirma como realmente visível dentro da área útil do POP driver.
+5. Durante outra corrida, faz até três arrastos verticais longos, do ponto inferior para o superior, para trazer o novo cartão que está abaixo. O eixo fica em 72% da largura e termina muito antes da barra de navegação do Android.
+6. Interrompe a rolagem assim que a frase completa fica visível. Sem `PRESSIONE E SEGURE PARA ATENDER` visível e com limites seguros, nenhuma pressão é executada.
+7. O centro do elemento visível define o toque. A coordenada antiga de calibração nunca é usada como destino automático e, imediatamente antes da pressão, o serviço confirma novamente a frase e a janela do POP driver.
 8. A pressão começa em 1.600 ms sem atraso artificial. O cartão é observado depois do gesto: se permanecer igual, o serviço aumenta a duração e repete uma vez; após três sucessos, reduz 25 ms até o piso seguro.
 9. A identidade da notificação ou do cartão impede repetir o fluxo na mesma oferta.
 
@@ -32,7 +32,7 @@ Não existe modo de teste. Depois que há calibração e a execução está liga
 1. Instale a APK universal independente (inclui `arm64-v8a`).
 2. Habilite **DriverTouch Pop** em Acessibilidade.
 3. Habilite **DriverTouch Pop - Notificações** no acesso a notificações.
-4. Preserve a calibração existente ou marque um ponto dentro do cartão da viagem.
+4. Preserve a calibração existente ou marque um ponto sobre a frase do cartão. Ela confirma a preparação inicial; o toque automático é calculado pela frase que estiver visível naquele momento.
 5. Deixe **Aceitar corridas automaticamente** ligado.
 
 ## Build

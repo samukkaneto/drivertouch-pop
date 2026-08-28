@@ -28,6 +28,6 @@ android\app\build\outputs\apk\release\app-release.apk
 2. Confirmar Acessibilidade e acesso às notificações habilitados.
 3. Confirmar no painel `Execução automática ativa`.
 4. Deixar o POP driver online.
-5. Ao surgir uma oferta, o Registro deve mostrar: notificação reconhecida, PopDriver aberto quando necessário, frase real localizada e toque concluído. Sem a frase completa, deve registrar encerramento sem pressão.
+5. Ao surgir uma oferta, o Registro deve mostrar: notificação reconhecida, POP driver aberto quando necessário, busca por rolagem quando a frase estiver abaixo, frase real visível e toque concluído. Sem a frase completa dentro da área segura, deve registrar encerramento sem pressão.
 
 O sucesso do Gradle prova que o código compila e a APK é instalável. A confirmação de que o POP driver efetivamente mudou para o estado de corrida aceita só existe no aparelho autenticado, pois esse estado pertence ao serviço externo da PopMove.

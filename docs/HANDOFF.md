@@ -14,8 +14,8 @@ Capturas de 28/08/2026 confirmaram que não há botão de aceite. A tela ociosa 
 - Pacote oficial `br.com.popmove.driver` confirmado na Play Store e nas capturas.
 - Notificação cria a identidade da oferta e só abre o POP driver quando ele não está em primeiro plano.
 - Durante uma corrida, a busca rola rapidamente até exibir o novo cartão.
-- Marcador acessível direciona o gesto automaticamente.
-- A calibração preservada só é usada depois que a frase exata foi confirmada; não há pressão às cegas.
+- Somente um marcador realmente visível e dentro da área útil direciona o gesto automaticamente.
+- A calibração preservada não é usada como coordenada automática; não há pressão às cegas nem na barra de navegação.
 - Uma identidade gera um gesto inicial e, somente se o cartão não responder, uma repetição mais longa.
 - A duração começa em 1.600 ms sem atraso e aprende pela resposta do cartão.
 - Configuração calibrada permanece ativa entre reinícios.
@@ -23,6 +23,6 @@ Capturas de 28/08/2026 confirmaram que não há botão de aceite. A tela ociosa 
 
 ## Entrega
 
-A versão 0.6.0 preserva o aceite individual da 0.5.0 e corrige a fila com rolagem exclusivamente vertical, rápida e reta. A pressão só ocorre após a frase completa. A esteira do GitHub é a fonte de validação de TypeScript, testes, lint, prebuild, Kotlin/Gradle, assinatura e APK.
+A versão 0.7.0 preserva o aceite individual e corrige a falha observada em corrida já ativa: texto fora da tela não é mais tratado como visível, a busca usa até três arrastos verticais confinados à área útil e a pressão é recalculada pela frase visível. A esteira do GitHub é a fonte de validação de TypeScript, testes, lint, prebuild, Kotlin/Gradle, assinatura e APK.
 
-Build 0.6.0 aprovado no GitHub Actions em 28/08/2026: execução `33187405702`, commit de implementação `4adcf08`, correção da proteção `b5711d4`, pacote `com.drivertouch.pop`, `versionCode 6` e assinatura compatível com a 0.5.0.
+O build 0.7.0 deve confirmar o pacote `com.drivertouch.pop`, `versionCode 7` e assinatura compatível com as versões anteriores antes da publicação.

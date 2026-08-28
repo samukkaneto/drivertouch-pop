@@ -300,6 +300,16 @@ object SafeAcceptStore {
     return true
   }
 
+  @Synchronized
+  fun releaseOfferIdentity(context: Context, identity: String) {
+    val preferences = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+    if (preferences.getString(KEY_HANDLED_OFFER_IDENTITY, null) != identity) return
+    preferences.edit()
+      .remove(KEY_HANDLED_OFFER_IDENTITY)
+      .remove(KEY_HANDLED_OFFER_AT)
+      .commit()
+  }
+
   fun lastEvent(context: Context): String? {
     return context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
       .getString(KEY_LAST_EVENT, null)
