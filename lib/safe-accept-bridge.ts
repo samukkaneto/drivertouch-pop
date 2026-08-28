@@ -11,6 +11,8 @@ type NativeStatus = {
   nativeModuleAvailable: boolean;
   armed: boolean;
   lastNativeEvent: string | null;
+  notificationListenerEnabled: boolean;
+  recentOfferNotification: boolean;
 };
 
 const bridge = SafeAcceptBridgeModule;
@@ -42,6 +44,11 @@ export async function openNativeAccessibilitySettings() {
   return bridge.openAccessibilitySettings();
 }
 
+export async function openNativeNotificationSettings() {
+  if (!bridge) return false;
+  return bridge.openNotificationSettings();
+}
+
 export async function getNativeStatus(): Promise<NativeStatus> {
   if (!bridge) {
     return {
@@ -49,6 +56,8 @@ export async function getNativeStatus(): Promise<NativeStatus> {
       nativeModuleAvailable: false,
       armed: false,
       lastNativeEvent: null,
+      notificationListenerEnabled: false,
+      recentOfferNotification: false,
     };
   }
 

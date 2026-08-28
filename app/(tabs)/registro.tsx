@@ -13,6 +13,7 @@ const typeIcon = {
   test: "science",
   gesture: "touch-app",
   system: "settings",
+  notification: "notifications-active",
 } as const;
 
 export default function LogScreen() {

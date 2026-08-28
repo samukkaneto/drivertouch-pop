@@ -11,18 +11,21 @@ import {
 import {
   getNativeStatus,
   openNativeAccessibilitySettings,
+  openNativeNotificationSettings,
 } from "@/lib/safe-accept-bridge";
 
 export default function PermissionsScreen() {
   const router = useRouter();
   const [isEnabled, setIsEnabled] = useState(false);
   const [moduleAvailable, setModuleAvailable] = useState(false);
+  const [notificationEnabled, setNotificationEnabled] = useState(false);
 
   const refresh = useCallback(() => {
     getNativeStatus()
       .then((status) => {
         setIsEnabled(status.serviceEnabled);
         setModuleAvailable(status.nativeModuleAvailable);
+        setNotificationEnabled(status.notificationListenerEnabled);
       })
       .catch(() => undefined);
   }, []);
@@ -85,6 +88,24 @@ export default function PermissionsScreen() {
             primeira aparição compatível e não envia gesto.
           </Text>
         </View>
+      </SectionCard>
+      <SectionCard title="Notificações do PopDriver">
+        <KeyValue
+          label="Listener de notificações"
+          value={notificationEnabled ? "Habilitado" : "Não habilitado"}
+        />
+        <Text style={styles.stepText}>
+          Este acesso é opcional e serve para registrar quando o PopDriver publica
+          um aviso. Ele não aceita corridas sozinho e o texto da notificação não
+          é salvo.
+        </Text>
+        <ActionButton
+          label="Abrir acesso às notificações"
+          icon="notifications-active"
+          variant="secondary"
+          onPress={() => openNativeNotificationSettings()}
+          disabled={!moduleAvailable}
+        />
       </SectionCard>
       <SectionCard title="Desligamento completo">
         <Text style={styles.stepText}>

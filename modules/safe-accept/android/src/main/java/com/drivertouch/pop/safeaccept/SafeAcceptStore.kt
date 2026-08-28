@@ -167,6 +167,31 @@ object SafeAcceptStore {
     return result
   }
 
+  fun markOfferNotification(context: Context, notificationKey: String) {
+    context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+      .putString("offer_notification_key", notificationKey.take(160))
+      .putLong("offer_notification_at", System.currentTimeMillis())
+      .apply()
+  }
+
+  fun recentOfferNotification(context: Context, maxAgeMs: Long = 90_000L): Boolean {
+    val preferences = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+    val at = preferences.getLong("offer_notification_at", 0L)
+    return at > 0L && System.currentTimeMillis() - at <= maxAgeMs
+  }
+
+  fun canAttemptOfferScroll(context: Context, minIntervalMs: Long = 12_000L): Boolean {
+    val preferences = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+    val lastAttempt = preferences.getLong("offer_scroll_attempt_at", 0L)
+    return System.currentTimeMillis() - lastAttempt >= minIntervalMs
+  }
+
+  fun markOfferScrollAttempt(context: Context) {
+    context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+      .putLong("offer_scroll_attempt_at", System.currentTimeMillis())
+      .apply()
+  }
+
   fun lastEvent(context: Context): String? {
     return context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
       .getString(KEY_LAST_EVENT, null)

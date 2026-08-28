@@ -10,7 +10,7 @@ export type Calibration = {
 export type EventRecord = {
   id: string;
   at: string;
-  type: "config" | "test" | "gesture" | "system";
+  type: "config" | "test" | "gesture" | "system" | "notification";
   source: EventSource;
   message: string;
 };
@@ -95,7 +95,7 @@ function sanitizeEvents(value: unknown): EventRecord[] {
         typeof item.id !== "string" ||
         typeof item.at !== "string" ||
         typeof item.message !== "string" ||
-        !["config", "test", "gesture", "system"].includes(item.type ?? "")
+        !["config", "test", "gesture", "system", "notification"].includes(item.type ?? "")
       ) {
         return [];
       }

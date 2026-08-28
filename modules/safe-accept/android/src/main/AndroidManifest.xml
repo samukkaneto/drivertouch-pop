@@ -13,5 +13,14 @@
         android:name="android.accessibilityservice"
         android:resource="@xml/popmove_safe_accept_service" />
     </service>
+    <service
+      android:name=".PopMoveNotificationListenerService"
+      android:exported="true"
+      android:label="DriverTouch Pop - Notificações"
+      android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+      <intent-filter>
+        <action android:name="android.service.notification.NotificationListenerService" />
+      </intent-filter>
+    </service>
   </application>
 </manifest>

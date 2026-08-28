@@ -4,17 +4,20 @@ export type NativeServiceStatus = {
   serviceEnabled: boolean;
   armed: boolean;
   lastNativeEvent: string | null;
+  notificationListenerEnabled: boolean;
+  recentOfferNotification: boolean;
 };
 
 export type NativeEventRecord = {
   id: string;
   at: number;
-  type: "config" | "test" | "gesture" | "system";
+  type: "config" | "test" | "gesture" | "system" | "notification";
   message: string;
 };
 
 declare class SafeAcceptBridgeModule extends NativeModule {
   openAccessibilitySettings(): Promise<boolean>;
+  openNotificationSettings(): Promise<boolean>;
   updateConfig(
     armed: boolean,
     mode: string,

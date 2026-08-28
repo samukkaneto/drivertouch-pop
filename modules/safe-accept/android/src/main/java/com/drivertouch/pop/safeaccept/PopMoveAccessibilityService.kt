@@ -64,19 +64,31 @@ class PopMoveAccessibilityService : AccessibilityService() {
       recordTestDiagnostic(config, "POP driver detectado, mas o Android não forneceu a árvore acessível")
       return
     }
-    val markerVisible = try {
-      containsMarker(root, config.acceptMarker)
-    } finally {
-      root.recycle()
-    }
+    val markerVisible = containsMarker(root, config.acceptMarker)
     if (!markerVisible) {
       offerVisible = false
-      recordTestDiagnostic(
-        config,
-        "POP driver detectado; o marcador configurado não apareceu na árvore acessível"
-      )
+      if (
+        config.mode == "assist" &&
+        SafeAcceptStore.recentOfferNotification(this) &&
+        SafeAcceptStore.canAttemptOfferScroll(this)
+      ) {
+        val scrolled = scrollFirstScrollable(root)
+        SafeAcceptStore.markOfferScrollAttempt(this)
+        SafeAcceptStore.record(
+          this,
+          "gesture",
+          if (scrolled) "Rolagem única solicitada após notificação compatível" else "Nenhum contêiner rolável encontrado após notificação"
+        )
+      } else {
+        recordTestDiagnostic(
+          config,
+          "POP driver detectado; o marcador configurado não apareceu na árvore acessível"
+        )
+      }
+      root.recycle()
       return
     }
+    root.recycle()
     if (offerVisible) return
     offerVisible = true
 
@@ -162,6 +174,22 @@ class PopMoveAccessibilityService : AccessibilityService() {
     if (now - lastDiagnosticAt < 10_000L) return
     lastDiagnosticAt = now
     SafeAcceptStore.record(this, "test", message)
+  }
+
+  private fun scrollFirstScrollable(node: AccessibilityNodeInfo): Boolean {
+    if (node.isScrollable && node.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD)) {
+      return true
+    }
+
+    for (index in 0 until node.childCount) {
+      val child = node.getChild(index) ?: continue
+      try {
+        if (scrollFirstScrollable(child)) return true
+      } finally {
+        child.recycle()
+      }
+    }
+    return false
   }
 
   private fun containsMarker(

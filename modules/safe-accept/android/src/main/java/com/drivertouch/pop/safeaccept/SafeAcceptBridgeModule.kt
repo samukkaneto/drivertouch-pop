@@ -23,6 +23,13 @@ class SafeAcceptBridgeModule : Module() {
       true
     }.runOnQueue(Queues.MAIN)
 
+    AsyncFunction("openNotificationSettings") {
+      context.startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS).apply {
+        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+      })
+      true
+    }.runOnQueue(Queues.MAIN)
+
     AsyncFunction("updateConfig") {
       armed: Boolean,
       mode: String,
@@ -48,6 +55,8 @@ class SafeAcceptBridgeModule : Module() {
       val config = SafeAcceptStore.load(context)
       mapOf(
         "serviceEnabled" to isAccessibilityServiceEnabled(),
+        "notificationListenerEnabled" to PopMoveNotificationListenerService.listenerIsEnabled,
+        "recentOfferNotification" to SafeAcceptStore.recentOfferNotification(context),
         "armed" to config.armed,
         "lastNativeEvent" to SafeAcceptStore.lastEvent(context)
       )

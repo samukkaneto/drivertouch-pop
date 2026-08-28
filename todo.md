@@ -32,3 +32,10 @@
 - [ ] Validar duração do toque
 - [ ] Confirmar que uma aparição gera somente um evento/gesto
 - [ ] Revisar termos da PopMove antes de qualquer distribuição
+
+## Auditoria de notificações e rolagem — versão 0.3.0
+
+- [x] Auditar o vínculo entre evento de acessibilidade, marcador e gesto prolongado
+- [x] Adicionar listener diagnóstico de notificações do PopDriver sem persistir dados da corrida
+- [x] Adicionar rolagem única e limitada após sinal compatível de notificação
+- [ ] Gerar e instalar nova APK release para validar notificações e rolagem no Moto G84 5G
