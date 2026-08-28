@@ -10,7 +10,7 @@ PopMoveNotificationListenerService
 POP driver em primeiro plano
         ↓ eventos e árvore acessível
 PopMoveAccessibilityService
-        ↓ marcador, rolagem de fila ou fallback calibrado
+        ↓ frase exata ou rolagem vertical de fila
 GestureDescription (toque prolongado adaptativo)
 ```
 
@@ -25,8 +25,9 @@ O aplicativo Expo configura e exibe o estado. A operação fica inteiramente no 
 - O listener consulta a janela ativa e não abre o POP driver quando ele já está em primeiro plano.
 - As leituras começam em 0 ms; não existe atraso fixo de reconhecimento.
 - Se o marcador estiver acessível, suas coordenadas prevalecem sobre a calibração.
-- Se a viagem chegou durante outra corrida, o serviço tenta `ACTION_SCROLL_FORWARD` e, se a árvore não expõe um contêiner rolável, usa uma rolagem curta por gesto. São no máximo oito tentativas.
-- Se o marcador não estiver acessível depois da busca, a notificação forte e recente permite usar o ponto calibrado somente quando a janela ativa ainda pertence ao POP driver.
+- Se a viagem chegou durante outra corrida, o serviço usa exclusivamente um gesto vertical reto: X fixo em 50% da largura, de 80% para 24% da altura, em 80 ms. São no máximo oito tentativas.
+- `ACTION_SCROLL_FORWARD` não é usado porque o primeiro contêiner rolável pode ser horizontal.
+- Se a frase completa não estiver acessível depois da busca, o fluxo termina sem pressão. A calibração só fornece a coordenada quando a frase já foi confirmada, mas seus limites não estão disponíveis.
 
 ## Velocidade e aprendizado
 

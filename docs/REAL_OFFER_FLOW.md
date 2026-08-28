@@ -25,7 +25,9 @@ marcador do cartão acessível? ── sim ──> centro do marcador
         │
         não ──> rolagem rápida até oito vezes
         ↓
-ponto calibrado dentro do cartão
+frase apareceu? ── não ──> encerrar sem pressionar
+        │
+        sim ──> centro da frase ou ponto calibrado
         ↓
 toque prolongado adaptativo
         ↓
@@ -39,5 +41,5 @@ O endereço participa somente de um hash transitório que distingue ofertas; o t
 - Nunca executar gesto fora da janela do pacote `br.com.popmove.driver`.
 - Nunca usar uma notificação genérica de corrida; somente a frase real observada.
 - Nunca repetir continuamente: no máximo oito rolagens e uma repetição do toque por oferta.
-- Preferir o centro do marcador acessível; usar calibração somente como fallback da notificação real.
+- Preferir o centro da frase acessível; usar a calibração somente após a frase completa estar confirmada.
 - Manter um desligamento imediato no painel e a revogação completa nas configurações Android.

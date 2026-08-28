@@ -12,7 +12,7 @@
 
 ## Limites técnicos restantes
 
-- Uma captura de tela mostra o visual, mas não revela quais textos o POP driver publica na árvore de Acessibilidade. Por isso existe o fallback notificação real + ponto calibrado.
+- Uma captura de tela mostra o visual, mas não revela quais textos o POP driver publica na árvore de Acessibilidade. A versão 0.6.0 exige que a frase completa apareça na árvore e encerra sem pressionar quando ela não está disponível.
 - O `contentIntent` da notificação é a forma correta de abrir o aplicativo, porém fabricantes podem aplicar restrições adicionais a atividades em segundo plano.
 - A conclusão de `dispatchGesture` confirma que o Android executou o toque; somente a mudança de estado do POP driver confirma que o servidor aceitou a viagem.
 - O aprendizado observa a resposta aos toques automáticos. Medir silenciosamente o toque manual dentro de outro aplicativo exigiria interceptá-lo e atrapalharia o próprio aceite.

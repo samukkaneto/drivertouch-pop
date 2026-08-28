@@ -15,7 +15,7 @@ Capturas de 28/08/2026 confirmaram que não há botão de aceite. A tela ociosa 
 - Notificação cria a identidade da oferta e só abre o POP driver quando ele não está em primeiro plano.
 - Durante uma corrida, a busca rola rapidamente até exibir o novo cartão.
 - Marcador acessível direciona o gesto automaticamente.
-- Calibração preservada funciona como fallback quando o texto não aparece na árvore.
+- A calibração preservada só é usada depois que a frase exata foi confirmada; não há pressão às cegas.
 - Uma identidade gera um gesto inicial e, somente se o cartão não responder, uma repetição mais longa.
 - A duração começa em 1.600 ms sem atraso e aprende pela resposta do cartão.
 - Configuração calibrada permanece ativa entre reinícios.
@@ -23,6 +23,6 @@ Capturas de 28/08/2026 confirmaram que não há botão de aceite. A tela ociosa 
 
 ## Entrega
 
-A versão 0.5.0 mantém o fluxo real da 0.4.0 e acrescenta abertura consciente da janela, rolagem de ofertas em fila, latência reduzida e pressão adaptativa. A esteira do GitHub é a fonte de validação de TypeScript, testes, lint, prebuild, Kotlin/Gradle, assinatura e APK.
+A versão 0.6.0 preserva o aceite individual da 0.5.0 e corrige a fila com rolagem exclusivamente vertical, rápida e reta. A pressão só ocorre após a frase completa. A esteira do GitHub é a fonte de validação de TypeScript, testes, lint, prebuild, Kotlin/Gradle, assinatura e APK.
 
 Build aprovado no GitHub Actions em 28/08/2026: execução `33167890429`, commit de implementação `9c84e36`, pacote `com.drivertouch.pop`, `versionCode 5` e assinatura compatível com a 0.4.0.

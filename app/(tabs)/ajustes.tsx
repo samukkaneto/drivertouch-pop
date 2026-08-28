@@ -12,7 +12,6 @@ export default function SettingsScreen() {
     String(settings.longPressDurationMs),
   );
   const [delay, setDelay] = useState(String(settings.detectionDelayMs));
-  const [marker, setMarker] = useState(settings.acceptMarker);
 
   function save() {
     const longPressDurationMs = Math.min(
@@ -23,7 +22,7 @@ export default function SettingsScreen() {
     setTuning({
       longPressDurationMs,
       detectionDelayMs,
-      acceptMarker: marker.trim() || "pressione e segure para atender",
+      acceptMarker: "pressione e segure para atender",
     });
     addEvent(
       "config",
@@ -64,20 +63,10 @@ export default function SettingsScreen() {
             maxLength={4}
           />
         </View>
-        <View style={styles.field}>
-          <Text style={styles.label}>Frase real do cartão da viagem</Text>
-          <TextInput
-            value={marker}
-            onChangeText={setMarker}
-            autoCapitalize="none"
-            style={styles.input}
-            maxLength={40}
-          />
-        </View>
         <Text style={styles.helper}>
           A frase observada no Pop Driver é “PRESSIONE E SEGURE PARA ATENDER”.
-          O serviço começa sem atraso e ajusta automaticamente a duração pela
-          resposta real do cartão.
+          Ela é fixa por segurança: sem a frase completa visível, o serviço não
+          pressiona. A duração é ajustada automaticamente pela resposta do cartão.
         </Text>
       </SectionCard>
 

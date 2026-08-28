@@ -119,13 +119,6 @@ export function sanitizeSettings(value: unknown): SafeAcceptSettings {
   const candidate = value as Partial<SafeAcceptSettings>;
   const mode: AssistMode = candidate.mode === "off" ? "off" : "assist";
   const calibration = sanitizeCalibration(candidate.calibration);
-  const candidateMarker =
-    typeof candidate.acceptMarker === "string" &&
-    candidate.acceptMarker.trim().length >= 2
-      ? candidate.acceptMarker.trim().toLocaleLowerCase("pt-BR").slice(0, 80)
-      : DEFAULT_SETTINGS.acceptMarker;
-  const marker =
-    candidateMarker === "aceitar" ? DEFAULT_SETTINGS.acceptMarker : candidateMarker;
   const usesLegacyTiming =
     candidate.schemaVersion !== 4 &&
     candidate.longPressDurationMs === 2000 &&
@@ -152,7 +145,7 @@ export function sanitizeSettings(value: unknown): SafeAcceptSettings {
       3000,
       DEFAULT_SETTINGS.detectionDelayMs,
     ),
-    acceptMarker: marker,
+    acceptMarker: DEFAULT_SETTINGS.acceptMarker,
     calibration,
     events: sanitizeEvents(candidate.events),
   };

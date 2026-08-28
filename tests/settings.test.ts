@@ -69,4 +69,10 @@ describe("settings migration and safety", () => {
     expect(settings.longPressDurationMs).toBe(1600);
     expect(settings.detectionDelayMs).toBe(0);
   });
+
+  it("keeps the observed PopDriver card phrase fixed", () => {
+    const settings = sanitizeSettings({ acceptMarker: "qualquer texto" });
+
+    expect(settings.acceptMarker).toBe("pressione e segure para atender");
+  });
 });

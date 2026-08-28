@@ -31,6 +31,7 @@ class PopMoveAccessibilityService : AccessibilityService() {
   private var offerResolutionInProgress = false
   private var scrollGestureInFlight = false
   private var scrollOfferFingerprint: String? = null
+  private var exhaustedScrollFingerprint: String? = null
   private var scrollAttempts = 0
   private var lastScrollAt = 0L
 
@@ -90,10 +91,7 @@ class PopMoveAccessibilityService : AccessibilityService() {
     super.onDestroy()
   }
 
-  private fun evaluateActiveWindow(
-    allowNotificationFallback: Boolean = false,
-    allowScroll: Boolean = false
-  ) {
+  private fun evaluateActiveWindow(allowScroll: Boolean = false) {
     val config = SafeAcceptStore.load(this)
     if (!config.armed || config.mode == "off") return
     if (config.x !in 0f..1f || config.y !in 0f..1f) return
@@ -105,19 +103,16 @@ class PopMoveAccessibilityService : AccessibilityService() {
       return
     }
 
-    val snapshot = buildScreenSnapshot(root, config.acceptMarker)
+    val snapshot = buildScreenSnapshot(root)
     val notificationFingerprint = SafeAcceptStore.currentOfferNotificationFingerprint(this)
     if (!snapshot.markerVisible) {
-      val scrollPending = if (allowScroll && notificationFingerprint != null) {
-        attemptOfferScroll(root, notificationFingerprint)
-      } else {
-        false
+      root.recycle()
+      if (allowScroll && notificationFingerprint != null) {
+        attemptOfferScroll(notificationFingerprint)
       }
-      root.recycle()
-      if (scrollPending || !(allowNotificationFallback && notificationFingerprint != null)) return
-    } else {
-      root.recycle()
+      return
     }
+    root.recycle()
 
     if (gestureInFlight || scrollGestureInFlight) {
       return
@@ -140,10 +135,8 @@ class PopMoveAccessibilityService : AccessibilityService() {
       "gesture",
       if (snapshot.markerVisible && snapshot.markerCenterX != null) {
         "Oferta real localizada; toque longo direcionado pelo cartão"
-      } else if (snapshot.markerVisible) {
-        "Oferta real localizada; toque longo direcionado pela calibração"
       } else {
-        "Notificação real confirmada; toque longo direcionado pela calibração"
+        "Frase real localizada; toque longo direcionado pela calibração"
       }
     )
     dispatchLongPress(
@@ -225,7 +218,7 @@ class PopMoveAccessibilityService : AccessibilityService() {
     }
 
     val snapshot = try {
-      buildScreenSnapshot(root, config.acceptMarker)
+      buildScreenSnapshot(root)
     } finally {
       root.recycle()
     }
@@ -280,63 +273,39 @@ class PopMoveAccessibilityService : AccessibilityService() {
     )
   }
 
-  private fun attemptOfferScroll(root: AccessibilityNodeInfo, fingerprint: String): Boolean {
+  private fun attemptOfferScroll(fingerprint: String) {
     if (scrollOfferFingerprint != fingerprint) {
       scrollOfferFingerprint = fingerprint
+      exhaustedScrollFingerprint = null
       scrollAttempts = 0
       lastScrollAt = 0L
     }
-    if (gestureInFlight || scrollGestureInFlight) return true
-    if (scrollAttempts >= MAX_SCROLL_ATTEMPTS) return false
-
-    val now = System.currentTimeMillis()
-    if (now - lastScrollAt < MIN_SCROLL_INTERVAL_MS) return true
-    lastScrollAt = now
-    scrollAttempts += 1
-
-    if (scrollFirstScrollable(root)) {
-      if (scrollAttempts == 1) {
+    if (gestureInFlight || scrollGestureInFlight) return
+    if (scrollAttempts >= MAX_SCROLL_ATTEMPTS) {
+      if (exhaustedScrollFingerprint != fingerprint) {
+        exhaustedScrollFingerprint = fingerprint
         SafeAcceptStore.record(
           this,
           "gesture",
-          "Busca por rolagem iniciada para localizar a corrida em fila"
+          "Busca vertical encerrada sem a frase real; nenhuma pressão foi executada"
         )
       }
-      offerHandler.postDelayed(
-        {
-          evaluateActiveWindow(
-            allowNotificationFallback = scrollAttempts >= MAX_SCROLL_ATTEMPTS,
-            allowScroll = true
-          )
-        },
-        AFTER_SCROLL_SCAN_DELAY_MS
-      )
-      return true
+      return
     }
 
-    return dispatchFallbackScrollGesture()
+    val now = System.currentTimeMillis()
+    if (now - lastScrollAt < MIN_SCROLL_INTERVAL_MS) return
+    lastScrollAt = now
+    scrollAttempts += 1
+    dispatchVerticalScrollGesture()
   }
 
-  private fun scrollFirstScrollable(node: AccessibilityNodeInfo): Boolean {
-    if (node.isScrollable && node.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD)) {
-      return true
-    }
-    for (index in 0 until node.childCount) {
-      val child = node.getChild(index) ?: continue
-      try {
-        if (scrollFirstScrollable(child)) return true
-      } finally {
-        child.recycle()
-      }
-    }
-    return false
-  }
-
-  private fun dispatchFallbackScrollGesture(): Boolean {
+  private fun dispatchVerticalScrollGesture() {
     val metrics = resources.displayMetrics
+    val fixedX = metrics.widthPixels * VERTICAL_SCROLL_X
     val path = Path().apply {
-      moveTo(metrics.widthPixels * 0.5f, metrics.heightPixels * 0.72f)
-      lineTo(metrics.widthPixels * 0.5f, metrics.heightPixels * 0.34f)
+      moveTo(fixedX, metrics.heightPixels * VERTICAL_SCROLL_START_Y)
+      lineTo(fixedX, metrics.heightPixels * VERTICAL_SCROLL_END_Y)
     }
     val gesture = GestureDescription.Builder()
       .addStroke(GestureDescription.StrokeDescription(path, 0L, SCROLL_DURATION_MS))
@@ -356,10 +325,7 @@ class PopMoveAccessibilityService : AccessibilityService() {
           }
           offerHandler.postDelayed(
             {
-              evaluateActiveWindow(
-                allowNotificationFallback = scrollAttempts >= MAX_SCROLL_ATTEMPTS,
-                allowScroll = true
-              )
+              evaluateActiveWindow(allowScroll = true)
             },
             AFTER_SCROLL_SCAN_DELAY_MS
           )
@@ -369,10 +335,7 @@ class PopMoveAccessibilityService : AccessibilityService() {
           scrollGestureInFlight = false
           offerHandler.postDelayed(
             {
-              evaluateActiveWindow(
-                allowNotificationFallback = scrollAttempts >= MAX_SCROLL_ATTEMPTS,
-                allowScroll = true
-              )
+              evaluateActiveWindow(allowScroll = true)
             },
             AFTER_SCROLL_SCAN_DELAY_MS
           )
@@ -380,8 +343,13 @@ class PopMoveAccessibilityService : AccessibilityService() {
       },
       null
     )
-    if (!accepted) scrollGestureInFlight = false
-    return accepted
+    if (!accepted) {
+      scrollGestureInFlight = false
+      offerHandler.postDelayed(
+        { evaluateActiveWindow(allowScroll = true) },
+        AFTER_SCROLL_SCAN_DELAY_MS
+      )
+    }
   }
 
   private fun completeOfferSession(identity: String) {
@@ -391,23 +359,16 @@ class PopMoveAccessibilityService : AccessibilityService() {
     SafeAcceptStore.completeOfferNotification(this, fingerprint)
     if (scrollOfferFingerprint == fingerprint) {
       scrollOfferFingerprint = null
+      exhaustedScrollFingerprint = null
       scrollAttempts = 0
       lastScrollAt = 0L
     }
   }
 
-  private fun buildScreenSnapshot(
-    root: AccessibilityNodeInfo,
-    configuredMarker: String
-  ): ScreenSnapshot {
+  private fun buildScreenSnapshot(root: AccessibilityNodeInfo): ScreenSnapshot {
     val texts = mutableListOf<String>()
     var markerBounds: Rect? = null
-    val markers = listOf(
-      configuredMarker,
-      OFFER_SCREEN_MARKER,
-      "segure para atender",
-      "pressione e segure"
-    ).map(::normalize).filter { it.length >= 4 }
+    val marker = normalize(OFFER_SCREEN_MARKER)
 
     fun visit(node: AccessibilityNodeInfo) {
       val nodeTexts = listOf(node.text, node.contentDescription)
@@ -417,7 +378,7 @@ class PopMoveAccessibilityService : AccessibilityService() {
 
       for (text in nodeTexts) {
         texts.add(text)
-        if (markerBounds == null && markers.any(text::contains)) {
+        if (markerBounds == null && text.contains(marker)) {
           val bounds = Rect()
           node.getBoundsInScreen(bounds)
           if (!bounds.isEmpty) markerBounds = bounds
@@ -436,7 +397,7 @@ class PopMoveAccessibilityService : AccessibilityService() {
 
     visit(root)
     val joinedText = texts.joinToString(" ")
-    val markerVisible = markers.any(joinedText::contains)
+    val markerVisible = joinedText.contains(marker)
     val stableText = texts.distinct().sorted().joinToString("|")
     val bounds = markerBounds
     return ScreenSnapshot(
@@ -451,6 +412,7 @@ class PopMoveAccessibilityService : AccessibilityService() {
     val fingerprint = SafeAcceptStore.currentOfferNotificationFingerprint(this)
     if (fingerprint != null && fingerprint != scrollOfferFingerprint) {
       scrollOfferFingerprint = fingerprint
+      exhaustedScrollFingerprint = null
       scrollAttempts = 0
       lastScrollAt = 0L
     }
@@ -465,15 +427,10 @@ class PopMoveAccessibilityService : AccessibilityService() {
         scrollStart + offset
       )
     }
-    val fallbackDelay = if (alreadyOpen) 1_050L else 1_250L
+    val finalScanDelay = if (alreadyOpen) 1_050L else 1_250L
     offerHandler.postDelayed(
-      {
-        evaluateActiveWindow(
-          allowNotificationFallback = true,
-          allowScroll = true
-        )
-      },
-      fallbackDelay
+      { evaluateActiveWindow(allowScroll = true) },
+      finalScanDelay
     )
   }
 
@@ -655,7 +612,10 @@ class PopMoveAccessibilityService : AccessibilityService() {
     private const val MAX_SCROLL_ATTEMPTS = 8
     private const val MIN_SCROLL_INTERVAL_MS = 60L
     private const val AFTER_SCROLL_SCAN_DELAY_MS = 20L
-    private const val SCROLL_DURATION_MS = 90L
+    private const val SCROLL_DURATION_MS = 80L
+    private const val VERTICAL_SCROLL_X = 0.5f
+    private const val VERTICAL_SCROLL_START_Y = 0.80f
+    private const val VERTICAL_SCROLL_END_Y = 0.24f
     private const val VERIFY_DELAY_MS = 350L
     private const val RETRY_DELAY_MS = 60L
     private const val POST_GESTURE_SCAN_DELAY_MS = 30L

@@ -11,12 +11,14 @@
 - [x] Iniciar reconhecimento em 0 ms e reduzir a pressão inicial para 1.600 ms
 - [x] Aprender a duração pela resposta real do cartão e repetir uma vez se necessário
 - [x] Tocar no centro do marcador acessível quando disponível
-- [x] Usar a calibração como fallback após a notificação real
+- [x] Usar a calibração somente após confirmar a frase real
 - [x] Distinguir novas viagens por identidade, inclusive em fila
 - [x] Remover o modo de teste e manter execução calibrada entre reinícios
 - [x] Manter desligamento imediato e revogação Android
 - [x] Compilar e publicar a APK 0.4.0 de execução
 - [x] Compilar e publicar a APK 0.5.0 de execução
+- [x] Remover rolagem lateral e bloquear pressão sem a frase completa
+- [ ] Compilar e publicar a APK 0.6.0 de execução
 
 ## Evidência do aparelho
 
