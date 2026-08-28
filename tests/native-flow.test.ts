@@ -1,13 +1,11 @@
 import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
+import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const serviceSource = readFileSync(
-  fileURLToPath(
-    new URL(
-      "../modules/safe-accept/android/src/main/java/com/drivertouch/pop/safeaccept/PopMoveAccessibilityService.kt",
-      import.meta.url,
-    ),
+  resolve(
+    process.cwd(),
+    "modules/safe-accept/android/src/main/java/com/drivertouch/pop/safeaccept/PopMoveAccessibilityService.kt",
   ),
   "utf8",
 );
