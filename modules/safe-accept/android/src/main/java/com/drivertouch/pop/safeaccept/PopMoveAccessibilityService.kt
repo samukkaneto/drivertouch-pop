@@ -257,12 +257,12 @@ class PopMoveAccessibilityService : AccessibilityService() {
     }
 
     val learning = SafeAcceptStore.recordGestureFailure(this, attempt.durationMs)
-    if (attempt.retryCount >= MAX_GESTURE_RETRIES || !learning.changed) {
+    if (attempt.retryCount >= MAX_GESTURE_RETRIES) {
       offerResolutionInProgress = false
       SafeAcceptStore.record(
         this,
         "gesture",
-        "Cartão permaneceu visível após a repetição; duração aprendida em ${learning.durationMs} ms"
+        "Cartão permaneceu visível; duração protegida mantida em ${learning.durationMs} ms"
       )
       return
     }
@@ -270,7 +270,7 @@ class PopMoveAccessibilityService : AccessibilityService() {
     SafeAcceptStore.record(
       this,
       "gesture",
-      "Cartão não respondeu; repetindo imediatamente com ${learning.durationMs} ms"
+      "Cartão ainda visível; repetindo uma vez sem aumentar os ${learning.durationMs} ms aprendidos"
     )
     offerHandler.postDelayed(
       {

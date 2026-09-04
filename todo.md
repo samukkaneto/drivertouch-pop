@@ -9,6 +9,7 @@
 - [x] Abrir pelo `contentIntent` somente quando o Pop Driver não está em primeiro plano
 - [x] Rolar até o cartão da nova corrida durante uma viagem em andamento
 - [x] Iniciar reconhecimento em 0 ms e reduzir a pressão inicial para 1.600 ms
+- [x] Travar o melhor tempo aprendido para que falhas nunca aumentem a duração
 - [x] Aprender a duração pela resposta real do cartão e repetir uma vez se necessário
 - [x] Tocar no centro do marcador acessível quando disponível
 - [x] Usar a calibração somente após confirmar a frase real

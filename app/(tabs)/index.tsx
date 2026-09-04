@@ -153,7 +153,7 @@ export default function PanelScreen() {
           value={notificationEnabled ? "Habilitadas" : "Aguardando ativação"}
         />
         <KeyValue
-          label="Duração aprendida"
+          label="Melhor duração protegida"
           value={`${effectiveDuration} ms`}
         />
         <KeyValue

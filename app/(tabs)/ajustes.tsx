@@ -66,7 +66,8 @@ export default function SettingsScreen() {
         <Text style={styles.helper}>
           A frase observada no Pop Driver é “PRESSIONE E SEGURE PARA ATENDER”.
           Ela é fixa por segurança: sem a frase completa visível, o serviço não
-          pressiona. A duração é ajustada automaticamente pela resposta do cartão.
+          pressiona. A duração só pode diminuir com respostas confirmadas; falhas
+          de leitura nunca aumentam o melhor tempo já aprendido.
         </Text>
       </SectionCard>
 

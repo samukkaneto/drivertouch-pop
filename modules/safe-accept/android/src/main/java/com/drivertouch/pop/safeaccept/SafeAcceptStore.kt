@@ -43,6 +43,7 @@ object SafeAcceptStore {
   private const val KEY_LEARNED_DURATION = "learned_duration"
   private const val KEY_LEARNING_SUCCESS_STREAK = "learning_success_streak"
   private const val KEY_SPEED_PROFILE_MIGRATED = "speed_profile_migrated_v1"
+  private const val KEY_MONOTONIC_LEARNING_MIGRATED = "monotonic_learning_migrated_v2"
   private const val MAX_EVENTS = 50
   private const val DEFAULT_DURATION_MS = 1600L
   private const val DEFAULT_DELAY_MS = 0L
@@ -52,6 +53,7 @@ object SafeAcceptStore {
   fun load(context: Context): SafeAcceptConfig {
     val preferences = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
     migrateSpeedProfile(preferences)
+    migrateMonotonicLearning(preferences)
     val x = preferences.getFloat(KEY_X, -1f)
     val y = preferences.getFloat(KEY_Y, -1f)
     val storedMode = preferences.getString(KEY_MODE, "assist") ?: "assist"
@@ -87,8 +89,12 @@ object SafeAcceptStore {
     val safeMode = if (mode == "off") "off" else "assist"
     val preferences = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
     migrateSpeedProfile(preferences)
+    migrateMonotonicLearning(preferences)
     val safeDuration = longPressDurationMs.coerceIn(500, MAX_DURATION_MS.toInt()).toLong()
-    val durationChanged = preferences.getLong(KEY_DURATION, DEFAULT_DURATION_MS) != safeDuration
+    val currentLearnedDuration = preferences
+      .getLong(KEY_LEARNED_DURATION, safeDuration)
+      .coerceIn(500L, MAX_DURATION_MS)
+    val lockedDuration = minOf(currentLearnedDuration, safeDuration)
     val editor = preferences.edit()
       .putBoolean(KEY_ARMED, armed && safeMode == "assist")
       .putString(KEY_MODE, safeMode)
@@ -97,9 +103,9 @@ object SafeAcceptStore {
       .putLong(KEY_DURATION, safeDuration)
       .putLong(KEY_DELAY, detectionDelayMs.coerceIn(0, 3000).toLong())
       .putString(KEY_MARKER, acceptMarker.trim().lowercase(Locale.ROOT).take(80))
-    if (durationChanged || !preferences.contains(KEY_LEARNED_DURATION)) {
+    if (lockedDuration != currentLearnedDuration || !preferences.contains(KEY_LEARNED_DURATION)) {
       editor
-        .putLong(KEY_LEARNED_DURATION, safeDuration)
+        .putLong(KEY_LEARNED_DURATION, lockedDuration)
         .putInt(KEY_LEARNING_SUCCESS_STREAK, 0)
     }
     editor.apply()
@@ -117,6 +123,26 @@ object SafeAcceptStore {
       .putLong(KEY_LEARNED_DURATION, migratedDuration)
       .putInt(KEY_LEARNING_SUCCESS_STREAK, 0)
       .putBoolean(KEY_SPEED_PROFILE_MIGRATED, true)
+      .commit()
+  }
+
+  private fun migrateMonotonicLearning(preferences: android.content.SharedPreferences) {
+    if (preferences.getBoolean(KEY_MONOTONIC_LEARNING_MIGRATED, false)) return
+    val configuredDuration = preferences
+      .getLong(KEY_DURATION, DEFAULT_DURATION_MS)
+      .coerceIn(500L, MAX_DURATION_MS)
+    val storedLearnedDuration = preferences
+      .getLong(KEY_LEARNED_DURATION, configuredDuration)
+      .coerceIn(500L, MAX_DURATION_MS)
+    val recoveredDuration = minOf(
+      configuredDuration,
+      storedLearnedDuration,
+      DEFAULT_DURATION_MS
+    )
+    preferences.edit()
+      .putLong(KEY_LEARNED_DURATION, recoveredDuration)
+      .putInt(KEY_LEARNING_SUCCESS_STREAK, 0)
+      .putBoolean(KEY_MONOTONIC_LEARNING_MIGRATED, true)
       .commit()
   }
 
@@ -145,15 +171,9 @@ object SafeAcceptStore {
   fun recordGestureFailure(context: Context, failedDurationMs: Long): GestureLearningResult {
     val preferences = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
     val currentDuration = preferences
-      .getLong(KEY_LEARNED_DURATION, failedDurationMs)
+      .getLong(KEY_LEARNED_DURATION, minOf(failedDurationMs, DEFAULT_DURATION_MS))
       .coerceIn(500L, MAX_DURATION_MS)
-    val nextDuration = (maxOf(currentDuration, failedDurationMs) + 150L)
-      .coerceAtMost(MAX_DURATION_MS)
-    preferences.edit()
-      .putLong(KEY_LEARNED_DURATION, nextDuration)
-      .putInt(KEY_LEARNING_SUCCESS_STREAK, 0)
-      .apply()
-    return GestureLearningResult(nextDuration, nextDuration != currentDuration)
+    return GestureLearningResult(currentDuration, false)
   }
 
   fun disable(context: Context) {

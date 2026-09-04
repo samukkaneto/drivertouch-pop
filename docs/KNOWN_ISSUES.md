@@ -12,10 +12,11 @@
 
 ## Limites técnicos restantes
 
-- Uma captura de tela mostra o visual, mas não revela todos os limites publicados na árvore de Acessibilidade. A versão 0.7.0 exige frase completa, `isVisibleToUser`, interseção com a janela segura e uma segunda validação imediatamente antes da pressão.
+- Uma captura de tela mostra o visual, mas não revela todos os limites publicados na árvore de Acessibilidade. Desde a versão 0.7.0, o fluxo exige frase completa, `isVisibleToUser`, interseção com a janela segura e uma segunda validação imediatamente antes da pressão.
 - O `contentIntent` da notificação é a forma correta de abrir o aplicativo, porém fabricantes podem aplicar restrições adicionais a atividades em segundo plano.
 - A conclusão de `dispatchGesture` confirma que o Android executou o toque; somente a mudança de estado do POP driver confirma que o servidor aceitou a viagem.
 - O aprendizado observa a resposta aos toques automáticos. Medir silenciosamente o toque manual dentro de outro aplicativo exigiria interceptá-lo e atrapalharia o próprio aceite.
+- Uma leitura que ainda mostra o cartão não prova que a duração foi insuficiente; por isso a versão 0.8.0 pode repetir uma vez, mas nunca aumenta o valor persistido.
 - A APK atual é universal, inclui `arm64-v8a` e é assinada para instalação direta, não para publicação em loja.
 - O DriverTouch depende das duas permissões permanecerem habilitadas e de o Android não restringir sua bateria em segundo plano.
 

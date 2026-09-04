@@ -35,9 +35,11 @@ O aplicativo Expo configura e exibe o estado. A operação fica inteiramente no 
 
 - Perfil inicial: zero milissegundo de atraso e pressão de 1.600 ms.
 - Após a pressão, a árvore é relida em 350 ms.
-- Se o cartão não mudou, a duração aprendida aumenta 150 ms e há uma única repetição imediata.
+- Se o cartão não mudou, há uma única repetição imediata com exatamente a mesma duração.
 - A cada três respostas positivas, a duração cai 25 ms, nunca abaixo do piso seguro de 1.450 ms para o perfil padrão.
-- A duração aprendida fica em `SharedPreferences` e aparece no painel.
+- Falhas e leituras inconclusivas não aumentam a duração nem apagam a sequência de sucessos.
+- A versão 0.8.0 migra valores antigos inflados para no máximo 1.600 ms, preservando qualquer valor menor já aprendido.
+- A melhor duração fica protegida em `SharedPreferences` e aparece no painel.
 
 ## Corridas em fila
 

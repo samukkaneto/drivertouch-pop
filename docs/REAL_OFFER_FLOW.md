@@ -31,7 +31,7 @@ frase apareceu? ── não ──> encerrar sem pressionar
         ↓
 toque prolongado adaptativo
         ↓
-cartão mudou? ── não ──> aumentar 150 ms e repetir uma vez
+cartão mudou? ── não ──> repetir uma vez com o mesmo tempo protegido
 ```
 
 O endereço participa somente de um hash transitório que distingue ofertas; o texto não é persistido. Atualizações repetidas da mesma notificação ficam bloqueadas por dois minutos. Uma nova viagem com conteúdo diferente, inclusive em fila durante uma corrida, recebe outra identidade e pode gerar outro gesto.
