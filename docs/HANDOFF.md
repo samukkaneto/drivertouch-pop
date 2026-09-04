@@ -25,4 +25,4 @@ Capturas de 28/08/2026 confirmaram que não há botão de aceite. A tela ociosa 
 
 A versão 0.8.0 preserva as proteções da 0.7.0 e corrige a degradação progressiva: o valor aprendido agora é uma trava monotônica, falhas repetem a mesma duração sem gravar aumento e instalações com valores inflados são recuperadas automaticamente. A esteira do GitHub é a fonte de validação de TypeScript, testes, lint, prebuild, Kotlin/Gradle, assinatura e APK.
 
-O build 0.8.0 deve confirmar o pacote `com.drivertouch.pop`, `versionCode 8` e assinatura compatível com a versão anterior antes da publicação.
+Build 0.8.0 aprovado no GitHub Actions em 04/09/2026: execução `33881351152`, commit de implementação `4edf9d9`, pacote `com.drivertouch.pop`, `versionCode 8`, assinatura v2 compatível com a 0.7.0 e SHA-256 `B455C4FE48204E0794BDF0156C15F1CC0EE51DD9736FD89B94396AEF4B6D0C21`.
