@@ -1,27 +1,41 @@
-# DriverTouch Pop — execução
+# DriverTouch Pop — estado de execução
+
+## Status
+
+Projeto funcional e encerrado no escopo atual em 21/09/2026. O proprietário confirmou operação conforme esperado. Não há tarefa pendente obrigatória.
 
 ## Concluído
 
 - [x] Confirmar pacote oficial `br.com.popmove.driver`
-- [x] Incorporar capturas reais da tela ociosa, notificação e cartão
-- [x] Substituir `aceitar` por `PRESSIONE E SEGURE PARA ATENDER`
+- [x] Incorporar evidência real da tela ociosa, notificação e cartão
 - [x] Reconhecer `Você tem uma nova viagem próxima`
-- [x] Abrir pelo `contentIntent` somente quando o Pop Driver não está em primeiro plano
-- [x] Rolar até o cartão da nova corrida durante uma viagem em andamento
-- [x] Iniciar reconhecimento em 0 ms e reduzir a pressão inicial para 1.600 ms
-- [x] Travar o melhor tempo aprendido para que falhas nunca aumentem a duração
-- [x] Aprender a duração pela resposta real do cartão e repetir uma vez se necessário
-- [x] Tocar no centro do marcador acessível quando disponível
-- [x] Usar a calibração somente após confirmar a frase real
+- [x] Exigir `PRESSIONE E SEGURE PARA ATENDER` realmente visível
+- [x] Abrir pelo `contentIntent` somente quando o POP driver não está em primeiro plano
+- [x] Aceitar uma corrida por toque prolongado no cartão
+- [x] Rolar verticalmente até o cartão de uma nova corrida durante viagem em andamento
+- [x] Bloquear rolagem lateral e gestos na barra de navegação Android
 - [x] Distinguir novas viagens por identidade, inclusive em fila
-- [x] Remover o modo de teste e manter execução calibrada entre reinícios
-- [x] Manter desligamento imediato e revogação Android
-- [x] Compilar e publicar a APK 0.4.0 de execução
-- [x] Compilar e publicar a APK 0.5.0 de execução
-- [x] Remover rolagem lateral e bloquear pressão sem a frase completa
-- [x] Compilar e publicar a APK 0.6.0 de execução
+- [x] Iniciar reconhecimento sem atraso artificial
+- [x] Usar duração inicial máxima de 1.600 ms
+- [x] Aprender somente para reduzir a duração até o piso seguro
+- [x] Impedir que falhas aumentem ou apaguem o melhor tempo aprendido
+- [x] Migrar automaticamente valores antigos inflados
+- [x] Repetir no máximo uma vez, com a mesma duração protegida
+- [x] Remover modo de teste e preservar execução entre reinícios
+- [x] Manter desligamento imediato e revogação pelas configurações Android
+- [x] Validar build, testes, lint, Kotlin/Gradle, pacote e assinatura
+- [x] Publicar APK estável 0.8.0
+- [x] Confirmar funcionamento operacional no aparelho
+- [x] Tornar o repositório privado e documentar a continuidade completa
 
-## Evidência do aparelho
+## Pendências atuais
 
-- [ ] Confirmar no Registro a sequência notificação → abertura → gesto concluído
-- [ ] Confirmar visualmente que o cartão desapareceu e a viagem foi aceita
+Nenhuma.
+
+## Eventos que justificam retomar o projeto
+
+- Mudança do pacote ou dos textos do POP driver.
+- Mudança do layout que impeça localizar o cartão ou a frase.
+- Alteração do Android que afete Acessibilidade, notificações ou gestos.
+- Solicitação explícita de suporte a outro aplicativo de mobilidade.
+- Relato operacional reproduzível que contradiga o estado atual.

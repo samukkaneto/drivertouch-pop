@@ -44,6 +44,11 @@ build-apk-windows.bat
 
 O script usa Java 17 portátil e Android Command-line Tools. A esteira `.github/workflows/android-debug.yml` também executa TypeScript, testes, lint, prebuild, Gradle release e publica a APK independente.
 
+## Backup e continuidade
+
+Este repositório privado é a fonte oficial de continuidade do projeto. Uma pessoa ou IA que chegar sem contexto deve começar por [`docs/PROJECT_STATUS.md`](docs/PROJECT_STATUS.md) e depois consultar [`docs/HANDOFF.md`](docs/HANDOFF.md), [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) e [`docs/REAL_OFFER_FLOW.md`](docs/REAL_OFFER_FLOW.md).
+
+A branch `main` contém o código atual; a release mais recente contém a APK preservada. Não há trabalho funcional pendente na versão 0.8.0.
 ## Estrutura
 
 | Caminho | Responsabilidade |
