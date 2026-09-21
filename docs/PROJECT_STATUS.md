@@ -16,7 +16,8 @@ O projeto está **funcional e encerrado no escopo atual**. O proprietário confi
 - Release estável: `v0.8.0` — `DriverTouch Pop 0.8.0`.
 - APK preservada na release: `DriverTouch-Pop-0.8.0-execucao.apk`.
 - Implementação da 0.8.0: commit `4edf9d9`.
-- Build aprovado: GitHub Actions `33881351152`.
+- Build aprovado da versão 0.8.0: GitHub Actions `33881351152`.
+- Validação integral do backup e do workflow em 21/09/2026: GitHub Actions `35664143363`.
 - Package ID do DriverTouch: `com.drivertouch.pop`.
 - Versionamento Android: `versionName 0.8.0`, `versionCode 8`.
 - SHA-256 da APK: `B455C4FE48204E0794BDF0156C15F1CC0EE51DD9736FD89B94396AEF4B6D0C21`.
@@ -170,6 +171,7 @@ npx expo prebuild --clean --platform android --no-install
 ```
 
 No Windows também existe `build-apk-windows.bat`, que usa Java 17 e ferramentas Android portáteis.
+Em 21/09/2026, `android-actions/setup-android` foi atualizado de v3 para `v4.0.4` porque o v3 passou a solicitar o pacote removido `tools`. O commit de manutenção é `56f62a1`; a execução `35664143363` aprovou novamente Android SDK, dependências, TypeScript, testes, lint, prebuild, Gradle e upload da APK. Avisos de depreciação de outras actions eram não bloqueantes nessa data.
 
 Antes de publicar outra versão, confirmar:
 
