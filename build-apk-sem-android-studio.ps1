@@ -2,8 +2,8 @@
 Set-StrictMode -Version Latest
 
 $ProjectRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
-$SdkRoot = Join-Path $env:LOCALAPPDATA "DriverTouchPop\AndroidSdk"
-$ToolsRoot = Join-Path $env:LOCALAPPDATA "DriverTouchPop\tools"
+$SdkRoot = Join-Path $env:LOCALAPPDATA "Toalha VermelhaPop\AndroidSdk"
+$ToolsRoot = Join-Path $env:LOCALAPPDATA "Toalha VermelhaPop\tools"
 $PortableJavaRoot = Join-Path $ToolsRoot "jdk17"
 $LogsRoot = Join-Path $ProjectRoot "build-logs"
 $SdkManager = Join-Path $SdkRoot "cmdline-tools\latest\bin\sdkmanager.bat"
@@ -108,7 +108,7 @@ New-Item -ItemType Directory -Force -Path $LogsRoot | Out-Null
 Start-Transcript -LiteralPath $LogFile -Force | Out-Null
 
 try {
-  Write-Host "DriverTouch Pop - criação local de APK independente" -ForegroundColor Green
+  Write-Host "Toalha Vermelha - criação local de APK independente" -ForegroundColor Green
   Write-Host "O processo usa somente Node.js, Java 17 e as ferramentas oficiais do Android."
   Write-Host "Log detalhado: $LogFile"
 

@@ -12,11 +12,11 @@ cd android
 ./gradlew :app:assembleRelease --no-daemon --stacktrace
 ```
 
-O workflow `.github/workflows/android-debug.yml` executa esses passos a cada push na `main` e publica `DriverTouch-Pop-standalone` por 14 dias.
+O workflow `.github/workflows/android-debug.yml` executa esses passos a cada push na `main` e publica `Toalha Vermelha-Pop-standalone` por 14 dias.
 
 ## Windows sem Android Studio
 
-Execute `build-apk-windows.bat`. O roteiro instala ferramentas portáteis em `%LOCALAPPDATA%\DriverTouchPop` e gera:
+Execute `build-apk-windows.bat`. O roteiro instala ferramentas portáteis em `%LOCALAPPDATA%\Toalha VermelhaPop` e gera:
 
 ```text
 android\app\build\outputs\apk\release\app-release.apk

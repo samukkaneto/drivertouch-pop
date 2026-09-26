@@ -70,7 +70,7 @@ export default function PermissionsScreen() {
             <Text style={styles.numberText}>2</Text>
           </View>
           <Text style={styles.stepText}>
-            Localize “DriverTouch Pop” na lista de serviços instalados.
+            Localize “Toalha Vermelha” na lista de serviços instalados.
           </Text>
         </View>
         <View style={styles.step}>
@@ -84,7 +84,7 @@ export default function PermissionsScreen() {
         <View style={styles.info}>
           <MaterialIcons name="touch-app" color="#155EEF" size={18} />
           <Text style={styles.infoText}>
-            Com o serviço habilitado e a execução ativa, o DriverTouch segura o
+            Com o serviço habilitado e a execução ativa, o Toalha Vermelha segura o
             cartão quando encontra “PRESSIONE E SEGURE PARA ATENDER”.
           </Text>
         </View>

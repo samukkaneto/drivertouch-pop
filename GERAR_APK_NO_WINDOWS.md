@@ -16,7 +16,7 @@ Na primeira execução, o roteiro baixa:
 - Android NDK 27;
 - dependências JavaScript do projeto.
 
-Java e Android SDK ficam dentro de `%LOCALAPPDATA%\DriverTouchPop`. Não é necessário instalar Android Studio, criar conta, informar token nem publicar o aplicativo.
+Java e Android SDK ficam dentro de `%LOCALAPPDATA%\Toalha VermelhaPop`. Não é necessário instalar Android Studio, criar conta, informar token nem publicar o aplicativo.
 
 Reserve pelo menos **7 GB livres** no disco C: para a primeira execução. Depois que o NDK estiver instalado, o roteiro exige no mínimo 2 GB livres. Os ZIPs temporários são removidos automaticamente.
 

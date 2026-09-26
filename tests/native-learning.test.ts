@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 const storeSource = readFileSync(
   resolve(
     process.cwd(),
-    "modules/safe-accept/android/src/main/java/com/drivertouch/pop/safeaccept/SafeAcceptStore.kt",
+    "modules/safe-accept/android/src/main/java/com/toalhaver/vermelha/safeaccept/SafeAcceptStore.kt",
   ),
   "utf8",
 );
@@ -13,7 +13,7 @@ const storeSource = readFileSync(
 const serviceSource = readFileSync(
   resolve(
     process.cwd(),
-    "modules/safe-accept/android/src/main/java/com/drivertouch/pop/safeaccept/PopMoveAccessibilityService.kt",
+    "modules/safe-accept/android/src/main/java/com/toalhaver/vermelha/safeaccept/PopMoveAccessibilityService.kt",
   ),
   "utf8",
 );

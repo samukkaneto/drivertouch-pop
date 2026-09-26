@@ -98,7 +98,7 @@ export default function CalibrationScreen() {
     if (!started) {
       Alert.alert(
         "Não foi possível abrir o POP driver",
-        "Confirme se o aplicativo do motorista está instalado e se o serviço DriverTouch Pop está habilitado.",
+        "Confirme se o aplicativo do motorista está instalado e se o serviço Toalha Vermelha está habilitado.",
       );
     }
   }
@@ -112,13 +112,13 @@ export default function CalibrationScreen() {
         <Text style={styles.title}>Calibrar frase de aceite</Text>
         <Text style={styles.subtitle}>
           Marque “PRESSIONE E SEGURE PARA ATENDER”. Durante a execução, o
-          DriverTouch relocaliza a frase visível e nunca toca na barra do Android.
+          Toalha Vermelha relocaliza a frase visível e nunca toca na barra do Android.
         </Text>
       </View>
 
       <SectionCard title="Calibração guiada no POP driver">
         <Text style={styles.helper}>
-          O DriverTouch abrirá o POP driver com um pequeno controle flutuante.
+          O Toalha Vermelha abrirá o POP driver com um pequeno controle flutuante.
           Prepare a tela desejada, toque em “Marcar agora” e depois toque no
           texto “PRESSIONE E SEGURE PARA ATENDER”.
         </Text>

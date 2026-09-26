@@ -1,6 +1,6 @@
 apply plugin: 'com.android.library'
 
-group = 'com.drivertouch.pop.safeaccept'
+group = 'com.toalhaver.vermelha.safeaccept'
 version = '0.8.0'
 
 def expoModulesCorePlugin = new File(project(":expo-modules-core").projectDir.absolutePath, "ExpoModulesCorePlugin.gradle")
@@ -29,7 +29,7 @@ if (useManagedAndroidSdkVersions) {
 }
 
 android {
-  namespace "com.drivertouch.pop.safeaccept"
+  namespace "com.toalhaver.vermelha.safeaccept"
   defaultConfig {
     versionCode 8
     versionName "0.8.0"

@@ -90,7 +90,7 @@ export default function PanelScreen() {
           <MaterialIcons name="shield" color="#155EEF" size={16} />
           <Text style={styles.eyebrowText}>POP DRIVER · CONTROLE LOCAL</Text>
         </View>
-        <Text style={styles.title}>DriverTouch Pop</Text>
+        <Text style={styles.title}>Toalha Vermelha</Text>
         <Text style={styles.subtitle}>
           Reconhece novas viagens do Pop Driver e segura automaticamente o
           cartão da corrida.

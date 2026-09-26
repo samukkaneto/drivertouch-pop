@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 const serviceSource = readFileSync(
   resolve(
     process.cwd(),
-    "modules/safe-accept/android/src/main/java/com/drivertouch/pop/safeaccept/PopMoveAccessibilityService.kt",
+    "modules/safe-accept/android/src/main/java/com/toalhaver/vermelha/safeaccept/PopMoveAccessibilityService.kt",
   ),
   "utf8",
 );

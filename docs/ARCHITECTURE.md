@@ -14,7 +14,7 @@ PopMoveAccessibilityService
 GestureDescription (toque prolongado adaptativo)
 ```
 
-O aplicativo Expo configura e exibe o estado. A operação fica inteiramente no módulo Kotlin e em `SharedPreferences`, portanto continua funcionando quando a interface do DriverTouch está fechada.
+O aplicativo Expo configura e exibe o estado. A operação fica inteiramente no módulo Kotlin e em `SharedPreferences`, portanto continua funcionando quando a interface do Toalha Vermelha está fechada.
 
 ## Detecção
 

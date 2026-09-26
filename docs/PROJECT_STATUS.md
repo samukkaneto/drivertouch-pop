@@ -1,27 +1,27 @@
-# DriverTouch Pop — relatório mestre do projeto
+# Toalha Vermelha — relatório mestre do projeto
 
-Atualizado em **21/09/2026**. Este documento é a fonte principal para qualquer pessoa ou IA que precise entender e continuar o projeto sem acesso às conversas anteriores.
+Atualizado em **26/09/2026**. Este documento é a fonte principal para qualquer pessoa ou IA que precise entender e continuar o projeto sem acesso às conversas anteriores.
 
 ## 1. Resumo executivo
 
-O DriverTouch Pop é um aplicativo Android local que atua como linha auxiliar do motorista: detecta uma nova oferta do POP driver e executa o toque prolongado necessário para aceitá-la, reduzindo a interação manual durante a condução.
+O Toalha Vermelha é um aplicativo Android local que atua como linha auxiliar do motorista: detecta uma nova oferta do POP driver e executa o toque prolongado necessário para aceitá-la, reduzindo a interação manual durante a condução.
 
-O projeto está **funcional e encerrado no escopo atual**. O proprietário confirmou em 21/09/2026 que ele funciona como deveria. Não há funcionalidade pendente. A versão estável é **0.8.0**.
+A base funcional foi confirmada pelo proprietário em 21/09/2026. A versão 0.9.0 preserva esse escopo e introduz a nova identidade solicitada.
 
 ## 2. Backup canônico
 
-- Repositório: `samukkaneto/drivertouch-pop`.
+- Repositório: `samukkaneto/drivertouch-pop` (privado; o nome do app foi alterado sem mover o repositório).
 - Visibilidade: **PRIVATE**.
 - Branch principal: `main`.
-- Release estável: `v0.8.0` — `DriverTouch Pop 0.8.0`.
-- APK preservada na release: `DriverTouch-Pop-0.8.0-execucao.apk`.
-- Implementação da 0.8.0: commit `4edf9d9`.
+- Base funcional: `v0.8.0`; nova compilação em preparação: `v0.9.0` — `Toalha Vermelha`.
+- APK histórica preservada na release: `DriverTouch-Pop-0.8.0-execucao.apk`; a APK nova será publicada como `Toalha-Vermelha-0.9.0.apk`.
+- Implementação-base da 0.8.0: commit `4edf9d9`; a 0.9.0 altera somente identidade e o traçado do gesto.
 - Build aprovado da versão 0.8.0: GitHub Actions `33881351152`.
 - Validação integral do backup e do workflow em 21/09/2026: GitHub Actions `35664143363`.
-- Package ID do DriverTouch: `com.drivertouch.pop`.
-- Versionamento Android: `versionName 0.8.0`, `versionCode 8`.
-- SHA-256 da APK: `B455C4FE48204E0794BDF0156C15F1CC0EE51DD9736FD89B94396AEF4B6D0C21`.
-- Certificado SHA-256: `fac61745dc0903786fb9ede62a962b399f7348f0bb6f899b8332667591033b9c`.
+- Package ID novo do Toalha Vermelha: `com.toalhaver.vermelha`; o ID antigo era `com.drivertouch.pop`.
+- Versionamento Android da nova build: `versionName 0.9.0`, `versionCode 9`.
+- SHA-256 da APK 0.9.0: será registrado após o build.
+- Certificado: será registrado após o build; como o pacote mudou, a instalação será uma nova instalação e não atualização por cima.
 
 Como o repositório é privado, código e releases exigem uma conta GitHub autorizada. A release mantém a APK pronta para instalação; a branch `main` mantém o código, documentação, workflow e histórico.
 
@@ -40,7 +40,7 @@ Aceitar automaticamente ofertas no aplicativo POP driver, inclusive uma nova ofe
 - Rolagem vertical para oferta em fila.
 - Pressão prolongada no cartão.
 - Aprendizado local, somente descendente, da duração.
-- Configuração, registro técnico e desligamento no aplicativo DriverTouch.
+- Configuração, registro técnico e desligamento no aplicativo Toalha Vermelha.
 
 ### Fora do escopo atual
 
@@ -67,7 +67,7 @@ Não existe botão de aceite. O aceite ocorre mantendo pressionado o cartão. Qu
 - Texto forte da notificação: `Você tem uma nova viagem próxima`.
 - Texto forte da oferta: `PRESSIONE E SEGURE PARA ATENDER`.
 - Texto conhecido da tela ociosa: `Aguarde uma solicitação`.
-- Pacote do aplicativo auxiliar: `com.drivertouch.pop`.
+- Pacote do aplicativo auxiliar: `com.toalhaver.vermelha`.
 
 Não ampliar esses sinais para notificações genéricas sem nova evidência real. A automação deve permanecer dedicada ao POP driver enquanto não houver uma implementação separada e explicitamente solicitada para outro aplicativo.
 
@@ -119,7 +119,7 @@ Arquivos principais:
 
 ## 8. Duração protegida e aprendizado
 
-A versão 0.8.0 corrigiu a degradação progressiva observada em versões anteriores.
+A base 0.8.0 corrigiu a degradação progressiva observada em versões anteriores.
 
 - Duração inicial máxima: 1.600 ms.
 - Piso seguro padrão: 1.450 ms.
@@ -152,8 +152,8 @@ A calibração continua sendo requisito de preparação e deve ser feita sobre a
 
 Permissões necessárias:
 
-1. Serviço de Acessibilidade `DriverTouch Pop`.
-2. Acesso às notificações `DriverTouch Pop - Notificações`.
+1. Serviço de Acessibilidade `Toalha Vermelha`.
+2. Acesso às notificações `Toalha Vermelha - Notificações`.
 
 O usuário pode interromper imediatamente pelo painel ou revogar as permissões no Android. Reiniciar o app não desarma uma configuração ativa.
 
@@ -175,7 +175,7 @@ Em 21/09/2026, `android-actions/setup-android` foi atualizado de v3 para `v4.0.4
 
 Antes de publicar outra versão, confirmar:
 
-- Package ID `com.drivertouch.pop`.
+- Package ID `com.toalhaver.vermelha`.
 - Incremento de `versionName` e `versionCode` em `app.config.ts`, `package.json` e módulo Android.
 - APK Signature Scheme v2 válida.
 - Mesmo certificado das versões instaladas.
@@ -197,11 +197,11 @@ Antes de publicar outra versão, confirmar:
 
 ## 13. Validação e estado final
 
-- O build 0.8.0 passou por TypeScript, testes, lint, prebuild, Kotlin/Gradle e empacotamento.
+- O build-base 0.8.0 passou por TypeScript, testes, lint, prebuild, Kotlin/Gradle e empacotamento.
 - O APK foi inspecionado com `aapt` e `apksigner`.
 - Pacote, versão, assinatura e hash foram confirmados.
 - O proprietário relatou em 21/09/2026 que o projeto funciona como deveria.
-- Portanto, não existe item funcional pendente no escopo atual.
+- A alteração 0.9.0 ainda depende da validação do build e da instalação no Moto G84 5G.
 
 ## 14. Limitações conhecidas
 
@@ -225,4 +225,4 @@ Antes de publicar outra versão, confirmar:
 
 ## 16. Trabalho restante
 
-**Nenhum.** O projeto está armazenado como backup operacional completo. Trabalho futuro só deve começar mediante mudança externa comprovada ou nova solicitação explícita.
+**Pendente:** validar a APK 0.9.0 no Moto G84 5G e confirmar as duas permissões após a troca do pacote.

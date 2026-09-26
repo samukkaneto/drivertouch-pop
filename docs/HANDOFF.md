@@ -1,10 +1,10 @@
 # Continuidade do projeto
 
-> Estado confirmado em 21/09/2026. Leia primeiro [`PROJECT_STATUS.md`](PROJECT_STATUS.md), que é o relatório mestre e a fonte de verdade para retomada.
+> Estado atualizado em 26/09/2026. Leia primeiro [`PROJECT_STATUS.md`](PROJECT_STATUS.md), que é o relatório mestre e a fonte de verdade para retomada.
 
 ## Situação atual
 
-O DriverTouch Pop 0.8.0 está funcional e o proprietário confirmou que opera como deveria. Não existe desenvolvimento funcional pendente. O repositório privado, a branch `main`, o histórico, os relatórios e as releases formam o backup oficial.
+O Toalha Vermelha 0.9.0 mantém a base funcional da 0.8.0 e o proprietário confirmou que opera como deveria. A nova APK ainda precisa passar pelo build e teste físico. O repositório privado, a branch `main`, o histórico, os relatórios e as releases formam o backup oficial.
 
 ## Objetivo
 
@@ -32,14 +32,14 @@ Capturas de 28/08/2026 confirmaram que não há botão de aceite. A tela ociosa 
 
 ## Entrega estável
 
-- Versão: `0.8.0` / `versionCode 8`.
+- Versão nova: `0.9.0` / `versionCode 9`.
 - Implementação: commit `4edf9d9`.
 - Build aprovado: GitHub Actions `33881351152`.
-- Pacote: `com.drivertouch.pop`.
-- Assinatura: APK Signature Scheme v2, compatível com a 0.7.0.
-- APK: release `v0.8.0`, arquivo `DriverTouch-Pop-0.8.0-execucao.apk`.
-- SHA-256: `B455C4FE48204E0794BDF0156C15F1CC0EE51DD9736FD89B94396AEF4B6D0C21`.
+- Pacote novo: `com.toalhaver.vermelha` (o antigo era `com.drivertouch.pop`).
+- Assinatura: será verificada após o build; por ter pacote novo, a APK deve ser instalada como novo aplicativo.
+- APK esperada: `Toalha-Vermelha-0.9.0.apk`.
+- SHA-256: será registrado após o build.
 
 ## Trabalho restante
 
-Nenhum para o escopo atual. Só reabrir desenvolvimento se o POP driver mudar pacote, textos, layout, duração exigida ou comportamento de notificações, ou se surgir uma nova exigência do usuário/Android.
+Validar o build 0.9.0 no Moto G84 5G. Só reabrir desenvolvimento se o POP driver mudar pacote, textos, layout, duração exigida ou comportamento de notificações, ou se surgir uma nova exigência do usuário/Android.

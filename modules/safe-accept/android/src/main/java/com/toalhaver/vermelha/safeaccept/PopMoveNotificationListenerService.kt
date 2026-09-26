@@ -1,4 +1,4 @@
-package com.drivertouch.pop.safeaccept
+package com.toalhaver.vermelha.safeaccept
 
 import android.app.Notification
 import android.content.Intent

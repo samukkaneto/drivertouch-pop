@@ -1,4 +1,4 @@
-package com.drivertouch.pop.safeaccept
+package com.toalhaver.vermelha.safeaccept
 
 import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.GestureDescription
@@ -170,7 +170,24 @@ class PopMoveAccessibilityService : AccessibilityService() {
     offerResolutionInProgress = true
     gestureInFlight = true
     lastGestureAt = System.currentTimeMillis()
-    val path = Path().apply { moveTo(safeAttempt.x, safeAttempt.y) }
+    val metrics = resources.displayMetrics
+    val safeBounds = Rect(
+      0,
+      (metrics.heightPixels * SAFE_TOP_RATIO).toInt(),
+      metrics.widthPixels,
+      (metrics.heightPixels * SAFE_BOTTOM_RATIO).toInt()
+    )
+    val driftX = minOf(3f, safeBounds.width() * 0.008f)
+    val driftY = minOf(2f, safeBounds.height() * 0.004f)
+    val startX = (safeAttempt.x - driftX).coerceIn(safeBounds.left.toFloat(), safeBounds.right.toFloat())
+    val startY = (safeAttempt.y - driftY).coerceIn(safeBounds.top.toFloat(), safeBounds.bottom.toFloat())
+    val path = Path().apply {
+      moveTo(startX, startY)
+      lineTo((safeAttempt.x + driftX * 0.65f).coerceIn(safeBounds.left.toFloat(), safeBounds.right.toFloat()),
+        (safeAttempt.y + driftY * 0.35f).coerceIn(safeBounds.top.toFloat(), safeBounds.bottom.toFloat()))
+      lineTo((safeAttempt.x - driftX * 0.15f).coerceIn(safeBounds.left.toFloat(), safeBounds.right.toFloat()),
+        (safeAttempt.y + driftY * 0.15f).coerceIn(safeBounds.top.toFloat(), safeBounds.bottom.toFloat()))
+    }
     val stroke = GestureDescription.StrokeDescription(
       path,
       config.detectionDelayMs,

@@ -1,4 +1,4 @@
-package com.drivertouch.pop.safeaccept
+package com.toalhaver.vermelha.safeaccept
 
 import android.content.Context
 import android.content.ComponentName

@@ -1,4 +1,4 @@
-package com.drivertouch.pop.safeaccept
+package com.toalhaver.vermelha.safeaccept
 
 import android.content.Context
 import org.json.JSONArray
@@ -22,7 +22,7 @@ data class GestureLearningResult(
 )
 
 object SafeAcceptStore {
-  private const val PREFS = "drivertouch_pop_native"
+  private const val PREFS = "toalha_vermelha_native"
   private const val KEY_ARMED = "armed"
   private const val KEY_MODE = "mode"
   private const val KEY_X = "x"

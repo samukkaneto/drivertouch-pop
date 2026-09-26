@@ -1,8 +1,8 @@
-# DriverTouch Pop
+# Toalha Vermelha
 
 Aplicativo Android local que aceita automaticamente novas viagens no **POP driver** para reduzir a interação manual do motorista.
 
-## Estado atual — versão 0.8.0
+## Estado atual — versão 0.9.0
 
 O fluxo foi alinhado com capturas reais do POP driver feitas em 28/08/2026:
 
@@ -31,8 +31,8 @@ Não existe modo de teste. Depois que há calibração e a execução está liga
 ## Instalação
 
 1. Instale a APK universal independente (inclui `arm64-v8a`).
-2. Habilite **DriverTouch Pop** em Acessibilidade.
-3. Habilite **DriverTouch Pop - Notificações** no acesso a notificações.
+2. Habilite **Toalha Vermelha** em Acessibilidade.
+3. Habilite **Toalha Vermelha - Notificações** no acesso a notificações.
 4. Preserve a calibração existente ou marque um ponto sobre a frase do cartão. Ela confirma a preparação inicial; o toque automático é calculado pela frase que estiver visível naquele momento.
 5. Deixe **Aceitar corridas automaticamente** ligado.
 
@@ -48,7 +48,7 @@ O script usa Java 17 portátil e Android Command-line Tools. A esteira `.github/
 
 Este repositório privado é a fonte oficial de continuidade do projeto. Uma pessoa ou IA que chegar sem contexto deve começar por [`docs/PROJECT_STATUS.md`](docs/PROJECT_STATUS.md) e depois consultar [`docs/HANDOFF.md`](docs/HANDOFF.md), [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) e [`docs/REAL_OFFER_FLOW.md`](docs/REAL_OFFER_FLOW.md).
 
-A branch `main` contém o código atual; a release mais recente contém a APK preservada. Não há trabalho funcional pendente na versão 0.8.0.
+A branch `main` contém o código atual; a release mais recente contém a APK preservada. A versão 0.9.0 é a nova compilação de identidade; ela mantém o fluxo funcional da 0.8.0 e adiciona o novo pacote, nome, logo e traçado suavemente variável do toque.
 ## Estrutura
 
 | Caminho | Responsabilidade |
