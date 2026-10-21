@@ -3,14 +3,14 @@ import type { ExpoConfig } from "expo/config";
 const config: ExpoConfig = {
   name: "Toalha Vermelha",
   slug: "toalha-vermelha",
-  version: "0.9.0",
+  version: "0.10.0",
   orientation: "portrait",
   icon: "./assets/images/icon.png",
   scheme: "toalhaver",
   newArchEnabled: false,
   android: {
     package: "com.toalhaver.vermelha",
-    versionCode: 9,
+    versionCode: 10,
     adaptiveIcon: {
       backgroundColor: "#155EEF",
       foregroundImage: "./assets/images/android-icon-foreground.png",

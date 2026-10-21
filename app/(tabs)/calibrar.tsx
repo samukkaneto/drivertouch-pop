@@ -25,7 +25,7 @@ import { useSafeAccept } from "@/lib/safe-accept-context";
 
 export default function CalibrationScreen() {
   const router = useRouter();
-  const { settings, setCalibration } = useSafeAccept();
+  const { settings, setCalibration, setBehavior } = useSafeAccept();
   const [xInput, setXInput] = useState(
     String(settings.calibration?.x ?? "0.50"),
   );
@@ -111,16 +111,16 @@ export default function CalibrationScreen() {
       <View style={styles.header}>
         <Text style={styles.title}>Calibrar frase de aceite</Text>
         <Text style={styles.subtitle}>
-          Marque “PRESSIONE E SEGURE PARA ATENDER”. Durante a execução, o
-          Toalha Vermelha relocaliza a frase visível e nunca toca na barra do Android.
+          Marque “PRESSIONE E SEGURE PARA ATENDER”. Durante a execução, o Toalha
+          Vermelha relocaliza a frase visível e nunca toca na barra do Android.
         </Text>
       </View>
 
       <SectionCard title="Calibração guiada no POP driver">
         <Text style={styles.helper}>
-          O Toalha Vermelha abrirá o POP driver com um pequeno controle flutuante.
-          Prepare a tela desejada, toque em “Marcar agora” e depois toque no
-          texto “PRESSIONE E SEGURE PARA ATENDER”.
+          O Toalha Vermelha abrirá o POP driver com um pequeno controle
+          flutuante. Prepare a tela desejada, toque em “Marcar agora” e depois
+          toque no texto “PRESSIONE E SEGURE PARA ATENDER”.
         </Text>
         <ActionButton
           label="Calibrar sobre o POP driver"
@@ -132,6 +132,35 @@ export default function CalibrationScreen() {
             Ative primeiro o serviço na tela de permissões Android.
           </Text>
         ) : null}
+      </SectionCard>
+
+      <SectionCard title="Raio da área de toque">
+        <Text style={styles.helper}>
+          Escolha o raio máximo. A cada tentativa, o ponto varia dentro da área
+          visível da frase de aceite; o raio é reduzido se necessário para caber
+          nela.
+        </Text>
+        <View style={styles.inputRow}>
+          {[0.02, 0.04, 0.08].map((radius) => (
+            <Pressable
+              key={radius}
+              accessibilityRole="radio"
+              accessibilityState={{ checked: settings.touchRadius === radius }}
+              accessibilityLabel={`Raio de ${Math.round(radius * 100)} por cento da largura da tela`}
+              onPress={() => setBehavior({ touchRadius: radius })}
+              style={[
+                styles.radiusChoice,
+                settings.touchRadius === radius && styles.radiusSelected,
+              ]}
+            >
+              <Text>{Math.round(radius * 100)}% da largura</Text>
+            </Pressable>
+          ))}
+        </View>
+        <Text style={styles.helper}>
+          Atual: {Math.round(settings.touchRadius * 100)}%. O círculo abaixo
+          representa o limite máximo; a área real acompanha a oferta na tela.
+        </Text>
       </SectionCard>
 
       <SectionCard title="Referência da frase">
@@ -159,6 +188,23 @@ export default function CalibrationScreen() {
           >
             <View style={styles.crossHorizontal} />
             <View style={styles.crossVertical} />
+            <View
+              pointerEvents="none"
+              style={[
+                styles.radiusPreview,
+                {
+                  width: gridSize.width * settings.touchRadius * 2,
+                  height: gridSize.width * settings.touchRadius * 2,
+                  borderRadius: gridSize.width * settings.touchRadius,
+                  left:
+                    displayPoint.x * gridSize.width -
+                    gridSize.width * settings.touchRadius,
+                  top:
+                    displayPoint.y * gridSize.height -
+                    gridSize.width * settings.touchRadius,
+                },
+              ]}
+            />
             <View
               style={[
                 styles.point,
@@ -271,6 +317,21 @@ const styles = StyleSheet.create({
     height: "100%",
     width: StyleSheet.hairlineWidth,
     backgroundColor: "#B2CCFF",
+  },
+  radiusChoice: {
+    flex: 1,
+    padding: 12,
+    minHeight: 48,
+    borderWidth: 1,
+    borderColor: "#D0D5DD",
+    borderRadius: 12,
+  },
+  radiusSelected: { backgroundColor: "#D1E0FF", borderColor: "#155EEF" },
+  radiusPreview: {
+    position: "absolute",
+    backgroundColor: "#155EEF22",
+    borderColor: "#155EEF",
+    borderWidth: 2,
   },
   point: {
     position: "absolute",

@@ -50,7 +50,21 @@ class SafeAcceptBridgeModule : Module() {
         acceptMarker
       )
       true
-    }
+    }.runOnQueue(Queues.MAIN)
+
+    AsyncFunction("updateBehavior") { rideMode: String, radius: Double ->
+      SafeAcceptStore.saveBehavior(context, rideMode, radius)
+      true
+    }.runOnQueue(Queues.MAIN)
+
+    AsyncFunction("resumeSingleRide") {
+      if (PopMoveAccessibilityService.isResolvingOffer()) {
+        false
+      } else {
+        SafeAcceptStore.resumeSingleRide(context)
+        true
+      }
+    }.runOnQueue(Queues.MAIN)
 
     AsyncFunction("getStatus") {
       val config = SafeAcceptStore.load(context)
@@ -59,6 +73,7 @@ class SafeAcceptBridgeModule : Module() {
         "notificationListenerEnabled" to isNotificationListenerEnabled(),
         "recentOfferNotification" to SafeAcceptStore.recentOfferNotification(context),
         "armed" to config.armed,
+        "singlePaused" to config.singlePaused,
         "effectiveDurationMs" to config.longPressDurationMs,
         "lastNativeEvent" to SafeAcceptStore.lastEvent(context)
       )
@@ -84,7 +99,7 @@ class SafeAcceptBridgeModule : Module() {
     AsyncFunction("disableNow") {
       SafeAcceptStore.disable(context)
       true
-    }
+    }.runOnQueue(Queues.MAIN)
   }
 
   private fun isAccessibilityServiceEnabled(): Boolean {
