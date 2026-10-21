@@ -13,7 +13,10 @@ data class SafeAcceptConfig(
   val y: Float,
   val longPressDurationMs: Long,
   val detectionDelayMs: Long,
-  val acceptMarker: String
+  val acceptMarker: String,
+  val rideMode: String,
+  val touchRadius: Float,
+  val singlePaused: Boolean
 )
 
 data class GestureLearningResult(
@@ -23,6 +26,9 @@ data class GestureLearningResult(
 
 object SafeAcceptStore {
   private const val PREFS = "toalha_vermelha_native"
+  private const val KEY_RIDE_MODE = "ride_mode"
+  private const val KEY_TOUCH_RADIUS = "touch_radius"
+  private const val KEY_SINGLE_IDENTITY = "single_identity"
   private const val KEY_ARMED = "armed"
   private const val KEY_MODE = "mode"
   private const val KEY_X = "x"
@@ -59,8 +65,10 @@ object SafeAcceptStore {
     val storedMode = preferences.getString(KEY_MODE, "assist") ?: "assist"
     val mode = if (storedMode == "off") "off" else "assist"
     val hasCalibration = x in 0f..1f && y in 0f..1f
+    val rideMode = preferences.getString(KEY_RIDE_MODE, "continuous") ?: "continuous"
+    val singlePaused = rideMode == "single" && preferences.contains(KEY_SINGLE_IDENTITY)
     return SafeAcceptConfig(
-      armed = mode == "assist" && hasCalibration,
+      armed = mode == "assist" && hasCalibration && !singlePaused,
       mode = mode,
       x = x,
       y = y,
@@ -72,8 +80,39 @@ object SafeAcceptStore {
         .getString(KEY_MARKER, "pressione e segure para atender")
         ?.trim()
         ?.lowercase(Locale.ROOT)
-        ?: "pressione e segure para atender"
+        ?: "pressione e segure para atender",
+      rideMode = rideMode,
+      touchRadius = preferences.getFloat(KEY_TOUCH_RADIUS, 0.04f).coerceIn(0.01f, 0.12f),
+      singlePaused = singlePaused
     )
+  }
+
+  fun saveBehavior(context: Context, rideMode: String, radius: Double) {
+    context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+      .putString(KEY_RIDE_MODE, if (rideMode == "single") "single" else "continuous")
+      .putFloat(KEY_TOUCH_RADIUS, (if (radius.isFinite()) radius else 0.04).coerceIn(0.01, 0.12).toFloat())
+      .apply()
+  }
+
+  fun canDispatch(context: Context, identity: String, retry: Boolean): Boolean {
+    val config = load(context)
+    val consumed = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+      .getString(KEY_SINGLE_IDENTITY, null)
+    return config.mode != "off" && config.x in 0f..1f && config.y in 0f..1f &&
+      RidePolicy.allows(config.rideMode, consumed, identity, retry)
+  }
+
+  fun consumeSingleRide(context: Context, identity: String) {
+    if (load(context).rideMode != "single" || load(context).singlePaused) return
+    context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+      .putString(KEY_SINGLE_IDENTITY, identity).commit()
+    record(context, "system", "Uma corrida: tentativa enviada; pausa até liberar a próxima no painel")
+  }
+
+  fun resumeSingleRide(context: Context) {
+    context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+      .remove(KEY_SINGLE_IDENTITY).apply()
+    record(context, "system", "Próxima corrida liberada pelo usuário")
   }
 
   fun save(

@@ -10,6 +10,7 @@ type NativeStatus = {
   serviceEnabled: boolean;
   nativeModuleAvailable: boolean;
   armed: boolean;
+  singlePaused: boolean;
   lastNativeEvent: string | null;
   notificationListenerEnabled: boolean;
   recentOfferNotification: boolean;
@@ -29,6 +30,7 @@ export async function syncSettingsToNative(settings: SafeAcceptSettings) {
     return false;
   }
 
+  await bridge.updateBehavior(settings.rideMode, settings.touchRadius);
   return bridge.updateConfig(
     settings.isArmed,
     settings.mode,
@@ -56,6 +58,7 @@ export async function getNativeStatus(): Promise<NativeStatus> {
       serviceEnabled: false,
       nativeModuleAvailable: false,
       armed: false,
+      singlePaused: false,
       lastNativeEvent: null,
       notificationListenerEnabled: false,
       recentOfferNotification: false,
@@ -65,6 +68,10 @@ export async function getNativeStatus(): Promise<NativeStatus> {
 
   const status = await bridge.getStatus();
   return { ...status, nativeModuleAvailable: true };
+}
+
+export async function resumeSingleRide() {
+  return bridge ? bridge.resumeSingleRide() : false;
 }
 
 export async function disableNativeService() {

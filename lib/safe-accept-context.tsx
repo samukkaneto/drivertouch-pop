@@ -31,6 +31,9 @@ type SafeAcceptContextValue = {
   setMode: (mode: AssistMode) => void;
   setArmed: (armed: boolean) => void;
   setCalibration: (x: number, y: number) => void;
+  setBehavior: (
+    values: Partial<Pick<SafeAcceptSettings, "rideMode" | "touchRadius">>,
+  ) => void;
   setTuning: (
     values: Pick<
       SafeAcceptSettings,
@@ -163,6 +166,13 @@ export function SafeAcceptProvider({
     }));
   }, []);
 
+  const setBehavior = useCallback(
+    (values: Partial<Pick<SafeAcceptSettings, "rideMode" | "touchRadius">>) => {
+      setSettings((current) => sanitizeSettings({ ...current, ...values }));
+    },
+    [],
+  );
+
   const setTuning = useCallback(
     (
       values: Pick<
@@ -196,6 +206,7 @@ export function SafeAcceptProvider({
       setArmed,
       setCalibration,
       setTuning,
+      setBehavior,
       addEvent,
       clearEvents,
       disableNow,
@@ -207,6 +218,7 @@ export function SafeAcceptProvider({
       setArmed,
       setCalibration,
       setTuning,
+      setBehavior,
       addEvent,
       clearEvents,
       disableNow,

@@ -3,6 +3,7 @@ import { NativeModule, requireOptionalNativeModule } from "expo";
 export type NativeServiceStatus = {
   serviceEnabled: boolean;
   armed: boolean;
+  singlePaused: boolean;
   lastNativeEvent: string | null;
   notificationListenerEnabled: boolean;
   recentOfferNotification: boolean;
@@ -28,6 +29,8 @@ declare class SafeAcceptBridgeModule extends NativeModule {
     detectionDelayMs: number,
     acceptMarker: string,
   ): Promise<boolean>;
+  updateBehavior(rideMode: string, touchRadius: number): Promise<boolean>;
+  resumeSingleRide(): Promise<boolean>;
   getStatus(): Promise<NativeServiceStatus>;
   getEvents(): Promise<NativeEventRecord[]>;
   clearEvents(): Promise<boolean>;

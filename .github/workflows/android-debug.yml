@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - main
+      - codex/toalha-vermelha-0.10.0
 
 permissions:
   contents: read
@@ -60,12 +61,22 @@ jobs:
         env:
           NODE_ENV: production
         working-directory: android
-        run: ./gradlew :app:assembleRelease --no-daemon --stacktrace
+        run: ./gradlew :safe-accept:testReleaseUnitTest :app:assembleRelease --no-daemon --stacktrace
+
+      - name: Verify APK identity and signature
+        run: |
+          APK=android/app/build/outputs/apk/release/app-release.apk
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$APK" > apk-info.txt
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs "$APK" >> apk-info.txt
+          sha256sum "$APK" >> apk-info.txt
+          cat apk-info.txt
 
       - name: Upload standalone APK
         uses: actions/upload-artifact@v4
         with:
-          name: Toalha-Vermelha-0.9.0-standalone
-          path: android/app/build/outputs/apk/release/app-release.apk
+          name: Toalha-Vermelha-0.10.0-standalone
+          path: |
+            android/app/build/outputs/apk/release/app-release.apk
+            apk-info.txt
           if-no-files-found: error
           retention-days: 14

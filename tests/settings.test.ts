@@ -65,7 +65,7 @@ describe("settings migration and safety", () => {
       detectionDelayMs: 400,
     });
 
-    expect(settings.schemaVersion).toBe(4);
+    expect(settings.schemaVersion).toBe(5);
     expect(settings.longPressDurationMs).toBe(1600);
     expect(settings.detectionDelayMs).toBe(0);
   });
@@ -74,5 +74,21 @@ describe("settings migration and safety", () => {
     const settings = sanitizeSettings({ acceptMarker: "qualquer texto" });
 
     expect(settings.acceptMarker).toBe("pressione e segure para atender");
+  });
+});
+
+describe("ride mode and touch area", () => {
+  it("preserves existing continuous behavior and supplies a radius on upgrade", () => {
+    const settings = sanitizeSettings({ schemaVersion: 4 });
+    expect(settings.rideMode).toBe("continuous");
+    expect(settings.touchRadius).toBe(0.04);
+  });
+  it("keeps the selected mode and constrains malformed radii", () => {
+    expect(
+      sanitizeSettings({ rideMode: "single", touchRadius: 0.08 }).rideMode,
+    ).toBe("single");
+    expect(sanitizeSettings({ touchRadius: Infinity }).touchRadius).toBe(0.04);
+    expect(sanitizeSettings({ touchRadius: -1 }).touchRadius).toBe(0.01);
+    expect(sanitizeSettings({ touchRadius: 100 }).touchRadius).toBe(0.12);
   });
 });

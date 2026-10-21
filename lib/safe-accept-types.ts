@@ -1,4 +1,5 @@
 export type AssistMode = "off" | "assist";
+export type RideMode = "single" | "continuous";
 export type EventSource = "app" | "android";
 
 export type Calibration = {
@@ -23,7 +24,9 @@ export type NativeEventRecord = {
 };
 
 export type SafeAcceptSettings = {
-  schemaVersion: 4;
+  schemaVersion: 5;
+  rideMode: RideMode;
+  touchRadius: number;
   appTarget: "popmove";
   mode: AssistMode;
   isArmed: boolean;
@@ -35,7 +38,9 @@ export type SafeAcceptSettings = {
 };
 
 export const DEFAULT_SETTINGS: SafeAcceptSettings = {
-  schemaVersion: 4,
+  schemaVersion: 5,
+  rideMode: "continuous",
+  touchRadius: 0.04,
   appTarget: "popmove",
   mode: "assist",
   isArmed: false,
@@ -95,7 +100,9 @@ function sanitizeEvents(value: unknown): EventRecord[] {
         typeof item.id !== "string" ||
         typeof item.at !== "string" ||
         typeof item.message !== "string" ||
-        !["config", "test", "gesture", "system", "notification"].includes(item.type ?? "")
+        !["config", "test", "gesture", "system", "notification"].includes(
+          item.type ?? "",
+        )
       ) {
         return [];
       }
@@ -120,12 +127,14 @@ export function sanitizeSettings(value: unknown): SafeAcceptSettings {
   const mode: AssistMode = candidate.mode === "off" ? "off" : "assist";
   const calibration = sanitizeCalibration(candidate.calibration);
   const usesLegacyTiming =
-    candidate.schemaVersion !== 4 &&
+    Number(candidate.schemaVersion ?? 0) < 4 &&
     candidate.longPressDurationMs === 2000 &&
     candidate.detectionDelayMs === 400;
 
   return {
-    schemaVersion: 4,
+    schemaVersion: 5,
+    rideMode: candidate.rideMode === "single" ? "single" : "continuous",
+    touchRadius: numberInRange(candidate.touchRadius, 0.01, 0.12, 0.04),
     appTarget: "popmove",
     mode,
     isArmed: Boolean(calibration && mode === "assist"),

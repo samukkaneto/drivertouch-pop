@@ -1,8 +1,21 @@
 # Toalha Vermelha — relatório mestre do projeto
 
-Atualizado em **26/09/2026**. Este documento é a fonte principal para qualquer pessoa ou IA que precise entender e continuar o projeto sem acesso às conversas anteriores.
+Atualizado em **21/10/2026**. Este documento é a fonte principal para qualquer pessoa ou IA que precise entender e continuar o projeto sem acesso às conversas anteriores.
 
-## 1. Resumo executivo
+## Atualização 0.10.0 — 21/10/2026
+
+Esta seção substitui o estado operacional das versões anteriores descrito abaixo.
+
+- Nome exibido: **Toalha Vermelha**; pacote mantido `com.toalhaver.vermelha`; versionCode **10**.
+- Calibrar oferece raios de **2%, 4% e 8% da largura da tela**, com prévia circular. Padrão 4%. O destino continua sendo relocalizado pela frase completa visível, nunca pela coordenada antiga.
+- Cada tentativa sorteia um ponto em um disco limitado pelos limites visíveis da frase e pela área segura da janela. O pequeno deslocamento durante a pressão também varia e fica dentro do disco; não altera a duração protegida. Se a região é pequena, o raio diminui. Isso não garante indetectabilidade.
+- **Uma corrida:** após o Android aceitar o envio de um gesto, o serviço pausa novas ofertas. A repetição limitada da mesma oferta continua permitida. Cancelamento ou resultado inconclusivo também conservam a pausa, pois não há confirmação do servidor. O botão **Liberar próxima corrida** libera uma nova tentativa quando a anterior termina. A pausa é nativa/persistente e sincronizações, ajustes e reabertura não a apagam.
+- **Corridas seguidas:** mantém a busca por novas ofertas, inclusive durante uma viagem e com rolagem vertical limitada. Esse modo preserva o comportamento anterior e é o padrão de migração.
+- A escolha dos modos é feita no painel. A região é configurada em Calibrar. Calibração sobreposta bloqueia gestos automáticos; repetição e rolagem revalidam o desligamento.
+- Testes: TypeScript, testes Vitest existentes e migração, lint; quatro testes Kotlin/JUnit verificam 10.000 amostras, limites, regiões inválidas e a regra de pausa/repetição. O workflow executa os testes nativos antes de gerar o APK.
+- Compilação Android e assinatura: aguardando resultado do workflow desta atualização. Teste de aceite real depende do aparelho do proprietário com POP driver autenticado.
+
+## 1. Resumo executivo (histórico até 0.9.0)
 
 O Toalha Vermelha é um aplicativo Android local que atua como linha auxiliar do motorista: detecta uma nova oferta do POP driver e executa o toque prolongado necessário para aceitá-la, reduzindo a interação manual durante a condução.
 

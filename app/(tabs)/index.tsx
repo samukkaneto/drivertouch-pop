@@ -17,12 +17,14 @@ import {
   SectionCard,
 } from "@/components/safe-accept-ui";
 import { getReadiness } from "@/lib/calibration";
-import { getNativeStatus } from "@/lib/safe-accept-bridge";
+import { getNativeStatus, resumeSingleRide } from "@/lib/safe-accept-bridge";
 import { useSafeAccept } from "@/lib/safe-accept-context";
 
 export default function PanelScreen() {
   const router = useRouter();
-  const { settings, isLoading, setArmed, disableNow } = useSafeAccept();
+  const { settings, isLoading, setArmed, disableNow, setBehavior } =
+    useSafeAccept();
+  const [singlePaused, setSinglePaused] = useState(false);
   const [nativeEnabled, setNativeEnabled] = useState(false);
   const [notificationEnabled, setNotificationEnabled] = useState(false);
   const [effectiveDuration, setEffectiveDuration] = useState(
@@ -33,19 +35,30 @@ export default function PanelScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      getNativeStatus()
-        .then((status) => {
-          setNativeEnabled(status.serviceEnabled);
-          setNotificationEnabled(status.notificationListenerEnabled);
-          setEffectiveDuration(status.effectiveDurationMs);
-          setLastNativeEvent(status.lastNativeEvent);
-        })
-        .catch(() => {
-          setNativeEnabled(false);
-          setNotificationEnabled(false);
-          setEffectiveDuration(settings.longPressDurationMs);
-          setLastNativeEvent(null);
-        });
+      let mounted = true;
+      const refresh = () =>
+        getNativeStatus()
+          .then((status) => {
+            if (!mounted) return;
+            setSinglePaused(status.singlePaused);
+            setNativeEnabled(status.serviceEnabled);
+            setNotificationEnabled(status.notificationListenerEnabled);
+            setEffectiveDuration(status.effectiveDurationMs);
+            setLastNativeEvent(status.lastNativeEvent);
+          })
+          .catch(() => {
+            if (!mounted) return;
+            setNativeEnabled(false);
+            setNotificationEnabled(false);
+            setEffectiveDuration(settings.longPressDurationMs);
+            setLastNativeEvent(null);
+          });
+      void refresh();
+      const timer = setInterval(refresh, 1000);
+      return () => {
+        mounted = false;
+        clearInterval(timer);
+      };
     }, [settings.longPressDurationMs]),
   );
 
@@ -57,7 +70,8 @@ export default function PanelScreen() {
     );
   }
 
-  const isActive = settings.isArmed && settings.mode !== "off";
+  const paused = settings.rideMode === "single" && singlePaused;
+  const isActive = settings.isArmed && settings.mode !== "off" && !paused;
   const statusColor =
     readiness.tone === "active"
       ? "#12B76A"
@@ -65,7 +79,7 @@ export default function PanelScreen() {
         ? "#155EEF"
         : "#667085";
 
-  function handleArmedChange(armed: boolean) {
+  async function handleArmedChange(armed: boolean) {
     if (!armed) {
       disableNow();
       return;
@@ -76,6 +90,17 @@ export default function PanelScreen() {
         "Ative o serviço de acessibilidade antes de armar a automação.",
       );
       return;
+    }
+    if (paused) {
+      const resumed = await resumeSingleRide().catch(() => false);
+      if (!resumed) {
+        Alert.alert(
+          "Aguarde a tentativa atual terminar",
+          "Tente liberar novamente em alguns segundos.",
+        );
+        return;
+      }
+      setSinglePaused(false);
     }
     setArmed(true);
   }
@@ -100,15 +125,58 @@ export default function PanelScreen() {
       <View style={[styles.statusCard, { borderColor: `${statusColor}55` }]}>
         <View style={[styles.statusDot, { backgroundColor: statusColor }]} />
         <View style={styles.statusCopy}>
-          <Text style={styles.statusTitle}>{readiness.label}</Text>
-          <Text style={styles.statusDetail}>{readiness.detail}</Text>
+          <Text style={styles.statusTitle}>
+            {paused ? "Uma corrida: pausado" : readiness.label}
+          </Text>
+          <Text style={styles.statusDetail}>
+            {paused
+              ? "Libere a próxima oferta quando desejar."
+              : readiness.detail}
+          </Text>
         </View>
       </View>
+
+      <SectionCard title="Modo de corridas">
+        <ActionButton
+          label={
+            settings.rideMode === "single" ? "✓ Uma corrida" : "Uma corrida"
+          }
+          icon="looks-one"
+          variant={settings.rideMode === "single" ? "primary" : "secondary"}
+          onPress={() => setBehavior({ rideMode: "single" })}
+        />
+        <ActionButton
+          label={
+            settings.rideMode === "continuous"
+              ? "✓ Corridas seguidas"
+              : "Corridas seguidas"
+          }
+          icon="repeat"
+          variant={settings.rideMode === "continuous" ? "primary" : "secondary"}
+          onPress={() => setBehavior({ rideMode: "continuous" })}
+        />
+        <Text style={styles.modeText}>
+          {settings.rideMode === "single"
+            ? "Tenta aceitar uma oferta e pausa. Libere a próxima pelo painel; reabrir o app não remove a pausa."
+            : "Continua procurando ofertas, inclusive durante uma corrida em andamento."}
+        </Text>
+        {paused ? (
+          <ActionButton
+            label="Liberar próxima corrida"
+            icon="play-arrow"
+            onPress={() => handleArmedChange(true)}
+          />
+        ) : null}
+      </SectionCard>
 
       <SectionCard title="Execução automática">
         <View style={styles.modeWrap}>
           <Text style={styles.modeTitle}>
-            {isActive ? "Ativa" : "Desligada"}
+            {paused
+              ? "Pausada após uma oferta"
+              : isActive
+                ? "Ativa"
+                : "Desligada"}
           </Text>
           <Text style={styles.modeText}>
             {isActive
@@ -118,21 +186,23 @@ export default function PanelScreen() {
         </View>
         <View style={styles.switchRow}>
           <View style={styles.switchCopy}>
-            <Text style={styles.switchTitle}>Aceitar corridas automaticamente</Text>
+            <Text style={styles.switchTitle}>
+              Aceitar corridas automaticamente
+            </Text>
             <Text style={styles.switchText}>
               {!settings.calibration
                 ? "Calibre a frase de aceite primeiro."
                 : !nativeEnabled
                   ? "Ative o serviço Android primeiro."
-                  : "Permanece ativa até você desligar."}
+                  : settings.rideMode === "single"
+                    ? "Pausa após uma tentativa de aceite."
+                    : "Permanece ativa até você desligar."}
             </Text>
           </View>
           <Switch
             value={isActive}
             onValueChange={handleArmedChange}
-            disabled={
-              !settings.calibration || !nativeEnabled
-            }
+            disabled={!settings.calibration || !nativeEnabled}
             trackColor={{ false: "#D0D5DD", true: "#84ADFF" }}
             thumbColor={isActive ? "#155EEF" : "#FFFFFF"}
           />
@@ -190,7 +260,8 @@ export default function PanelScreen() {
         <Text style={styles.noteText}>
           A oferta é confirmada pelo texto “PRESSIONE E SEGURE PARA ATENDER”.
           Quando outra corrida chega durante uma viagem, o serviço rola até o
-          cartão aparecer; se o POP driver já está aberto, não tenta abri-lo de novo.
+          cartão aparecer; se o POP driver já está aberto, não tenta abri-lo de
+          novo.
         </Text>
       </View>
     </ScrollView>

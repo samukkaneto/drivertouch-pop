@@ -40,7 +40,8 @@ class PopMoveAccessibilityService : AccessibilityService() {
     val markerCenterX: Float?,
     val markerCenterY: Float?,
     val fingerprint: String,
-    val safeBounds: Rect
+    val safeBounds: Rect,
+    val markerBounds: Rect?
   )
 
   private data class GestureAttempt(
@@ -49,7 +50,8 @@ class PopMoveAccessibilityService : AccessibilityService() {
     val x: Float,
     val y: Float,
     val durationMs: Long,
-    val retryCount: Int
+    val retryCount: Int,
+    val touchBounds: Rect? = null
   )
 
   override fun onServiceConnected() {
@@ -96,7 +98,7 @@ class PopMoveAccessibilityService : AccessibilityService() {
     val config = SafeAcceptStore.load(this)
     if (!config.armed || config.mode == "off") return
     if (config.x !in 0f..1f || config.y !in 0f..1f) return
-    if (offerResolutionInProgress) return
+    if (offerResolutionInProgress || overlayView != null) return
 
     val root = rootInActiveWindow ?: return
     if (root.packageName?.toString() != POP_DRIVER_PACKAGE) {
@@ -156,6 +158,11 @@ class PopMoveAccessibilityService : AccessibilityService() {
 
   private fun dispatchLongPress(config: SafeAcceptConfig, attempt: GestureAttempt) {
     if (gestureInFlight || scrollGestureInFlight) return
+    if (overlayView != null || !SafeAcceptStore.canDispatch(this, attempt.identity, attempt.retryCount > 0)) {
+      offerResolutionInProgress = false
+      return
+    }
+    val currentConfig = SafeAcceptStore.load(this)
     val safeAttempt = resolveVisibleMarkerAttempt(attempt)
     if (safeAttempt == null) {
       offerResolutionInProgress = false
@@ -170,27 +177,27 @@ class PopMoveAccessibilityService : AccessibilityService() {
     offerResolutionInProgress = true
     gestureInFlight = true
     lastGestureAt = System.currentTimeMillis()
-    val metrics = resources.displayMetrics
-    val safeBounds = Rect(
-      0,
-      (metrics.heightPixels * SAFE_TOP_RATIO).toInt(),
-      metrics.widthPixels,
-      (metrics.heightPixels * SAFE_BOTTOM_RATIO).toInt()
-    )
-    val driftX = minOf(3f, safeBounds.width() * 0.008f)
-    val driftY = minOf(2f, safeBounds.height() * 0.004f)
-    val startX = (safeAttempt.x - driftX).coerceIn(safeBounds.left.toFloat(), safeBounds.right.toFloat())
-    val startY = (safeAttempt.y - driftY).coerceIn(safeBounds.top.toFloat(), safeBounds.bottom.toFloat())
+    val bounds = safeAttempt.touchBounds ?: run {
+      gestureInFlight = false
+      offerResolutionInProgress = false
+      return
+    }
+    val samples = TouchRegion.samplePath(
+      bounds.left.toFloat(), bounds.top.toFloat(), bounds.right.toFloat(), bounds.bottom.toFloat(),
+      resources.displayMetrics.widthPixels * currentConfig.touchRadius,
+      minOf(2f, android.view.ViewConfiguration.get(this).scaledTouchSlop / 4f)
+    ) ?: run {
+      gestureInFlight = false
+      offerResolutionInProgress = false
+      return
+    }
     val path = Path().apply {
-      moveTo(startX, startY)
-      lineTo((safeAttempt.x + driftX * 0.65f).coerceIn(safeBounds.left.toFloat(), safeBounds.right.toFloat()),
-        (safeAttempt.y + driftY * 0.35f).coerceIn(safeBounds.top.toFloat(), safeBounds.bottom.toFloat()))
-      lineTo((safeAttempt.x - driftX * 0.15f).coerceIn(safeBounds.left.toFloat(), safeBounds.right.toFloat()),
-        (safeAttempt.y + driftY * 0.15f).coerceIn(safeBounds.top.toFloat(), safeBounds.bottom.toFloat()))
+      moveTo(samples[0].x, samples[0].y)
+      samples.drop(1).forEach { point -> lineTo(point.x, point.y) }
     }
     val stroke = GestureDescription.StrokeDescription(
       path,
-      config.detectionDelayMs,
+      currentConfig.detectionDelayMs,
       attempt.durationMs
     )
     val gesture = GestureDescription.Builder().addStroke(stroke).build()
@@ -200,6 +207,7 @@ class PopMoveAccessibilityService : AccessibilityService() {
       object : GestureResultCallback() {
         override fun onCompleted(gestureDescription: GestureDescription?) {
           gestureInFlight = false
+          SafeAcceptStore.consumeSingleRide(this@PopMoveAccessibilityService, safeAttempt.identity)
           SafeAcceptStore.record(
             this@PopMoveAccessibilityService,
             "gesture",
@@ -220,6 +228,8 @@ class PopMoveAccessibilityService : AccessibilityService() {
       },
       null
     )
+
+    if (accepted) SafeAcceptStore.consumeSingleRide(this, attempt.identity)
 
     if (!accepted) {
       gestureInFlight = false
@@ -331,6 +341,7 @@ class PopMoveAccessibilityService : AccessibilityService() {
   }
 
   private fun dispatchVerticalScrollGesture(safeBounds: Rect) {
+    if (overlayView != null || !SafeAcceptStore.load(this).armed || !isTargetWindowActive()) return
     if (safeBounds.width() < dp(MIN_SAFE_WIDTH_DP) || safeBounds.height() < dp(MIN_SAFE_HEIGHT_DP)) {
       SafeAcceptStore.record(
         this,
@@ -453,7 +464,8 @@ class PopMoveAccessibilityService : AccessibilityService() {
       markerCenterX = bounds?.exactCenterX(),
       markerCenterY = bounds?.exactCenterY(),
       fingerprint = sha256(stableText),
-      safeBounds = Rect(safeBounds)
+      safeBounds = Rect(safeBounds),
+      markerBounds = bounds?.let { Rect(it) }
     )
   }
 
@@ -506,7 +518,8 @@ class PopMoveAccessibilityService : AccessibilityService() {
     return attempt.copy(
       screenFingerprint = snapshot.fingerprint,
       x = x,
-      y = y
+      y = y,
+      touchBounds = snapshot.markerBounds
     )
   }
 
@@ -734,6 +747,11 @@ class PopMoveAccessibilityService : AccessibilityService() {
     @Volatile
     var serviceIsEnabled: Boolean = false
       private set
+
+    fun isResolvingOffer(): Boolean {
+      val service = currentInstance ?: return false
+      return service.offerResolutionInProgress || service.gestureInFlight || service.scrollGestureInFlight
+    }
 
     fun beginOverlayCalibration(): Boolean {
       return currentInstance?.beginCalibrationOverlay() ?: false
