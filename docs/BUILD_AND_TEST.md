@@ -9,10 +9,10 @@ pnpm test
 pnpm lint
 npx expo prebuild --clean --platform android --no-install
 cd android
-./gradlew :safe-accept:testReleaseUnitTest :app:assembleRelease --no-daemon --stacktrace
+./gradlew :safe-accept:testReleaseUnitTest :app:assembleRelease --no-daemon --stacktrace -PreactNativeArchitectures=arm64-v8a
 ```
 
-O workflow `.github/workflows/android-debug.yml` executa esses passos a cada push na `main` e publica `Toalha-Vermelha-0.10.0-standalone` por 14 dias.
+O workflow `.github/workflows/android-debug.yml` executa esses passos e entrega o APK ARM64 na pré-release privada `v0.10.0`. Após verificar a assinatura, o job de build com acesso somente de leitura transfere o APK por cache com chave exclusiva do commit/execução/tentativa. Um job separado, sem checkout ou instalação de dependências, verifica o SHA-256 e publica a release com a permissão mínima de conteúdo exigida pelo GitHub. Releases já existentes são preservadas. A mudança evita depender da cota de artefatos Actions, que estava esgotada em 21/10/2026.
 
 ## Windows sem Android Studio
 
