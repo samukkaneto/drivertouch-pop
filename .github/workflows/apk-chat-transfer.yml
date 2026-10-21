@@ -8,31 +8,20 @@ permissions:
 jobs:
   transfer:
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    timeout-minutes: 5
     steps:
-      - name: Obtain short-lived URL for the requested APK
+      - name: Download and verify the existing APK
         env:
           GH_TOKEN: ${{ github.token }}
+          GH_REPO: samukkaneto/drivertouch-pop
         run: |
-          python3 - <<'PY'
-          import os, urllib.request, urllib.error
-          from urllib.parse import urlparse
-          class NoRedirect(urllib.request.HTTPRedirectHandler):
-              def redirect_request(self, req, fp, code, msg, headers, newurl):
-                  return None
-          req = urllib.request.Request(
-              'https://api.github.com/repos/samukkaneto/drivertouch-pop/releases/assets/662196336',
-              headers={'Authorization': 'Bearer ' + os.environ['GH_TOKEN'],
-                       'Accept': 'application/octet-stream',
-                       'X-GitHub-Api-Version': '2022-11-28'})
-          try:
-              urllib.request.build_opener(NoRedirect()).open(req)
-              raise RuntimeError('Expected a download redirect')
-          except urllib.error.HTTPError as e:
-              if e.code != 302:
-                  raise RuntimeError('Unexpected status: ' + str(e.code))
-              location = e.headers['Location']
-              if urlparse(location).scheme != 'https' or urlparse(location).hostname != 'release-assets.githubusercontent.com':
-                  raise RuntimeError('Unexpected download host')
-              print('APK_DOWNLOAD_URL=' + location)
-          PY
+          gh release download v0.10.0 --pattern Toalha-Vermelha-0.10.0.apk
+          echo '587dcf234c3f34b0b1608ec97ef52410c25f441abedea1634c7ecc157c45f097  Toalha-Vermelha-0.10.0.apk' | sha256sum --check -
+      - name: Transfer APK as a downloadable artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Toalha-Vermelha-0.10.0
+          path: Toalha-Vermelha-0.10.0.apk
+          compression-level: 0
+          retention-days: 1
+          if-no-files-found: error
