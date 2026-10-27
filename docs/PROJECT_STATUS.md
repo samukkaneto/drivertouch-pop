@@ -1,14 +1,26 @@
 # Toalha Vermelha — relatório mestre do projeto
 
-Atualizado em **21/10/2026**. Este documento é a fonte principal para qualquer pessoa ou IA que precise entender e continuar o projeto sem acesso às conversas anteriores.
+Atualizado em **27/10/2026**. Este documento é a fonte principal para qualquer pessoa ou IA que precise entender e continuar o projeto sem acesso às conversas anteriores.
 
-## Atualização 0.10.0 — 21/10/2026
+## Atualização 0.11.0 — 27/10/2026
+
+Esta é a versão em preparação para substituir a 0.10.0.
+
+- Nome exibido: **Toalha Vermelha**; pacote `com.toalhaver.vermelha`; versionName **0.11.0**; versionCode **11**.
+- O gesto automático fica parado no centro dos limites visíveis da frase de aceite. A variação aleatória de posição e o deslocamento durante a pressão foram removidos.
+- O círculo e a escolha de raio em Calibrar são apenas guias visuais; não alteram as coordenadas nem o movimento do gesto automático.
+- **Uma corrida** e **Corridas seguidas** continuam disponíveis. Uma corrida pausa novas ofertas após uma tentativa; Corridas seguidas mantém a busca por novas ofertas.
+- O pacote e o serviço de Acessibilidade continuam visíveis para o Android e para aplicativos que tenham acesso adequado. Trocar o rótulo ou o identificador do pacote não oculta o serviço.
+- Os testes Kotlin verificam o caminho estacionário no centro, regiões inválidas e as regras dos modos de corrida. O workflow GitHub Actions fará tipagem, testes, lint, build Android e verificação da assinatura antes da publicação.
+- APK 0.11.0: será publicado na pré-release pública após o workflow concluir. Não instalar até confirmar o resultado do build abaixo.
+
+## Histórico 0.10.0 — 21/10/2026
 
 Esta seção substitui o estado operacional das versões anteriores descrito abaixo.
 
 - Nome exibido: **Toalha Vermelha**; pacote mantido `com.toalhaver.vermelha`; versionCode **10**.
 - Calibrar oferece raios de **2%, 4% e 8% da largura da tela**, com prévia circular. Padrão 4%. O destino continua sendo relocalizado pela frase completa visível, nunca pela coordenada antiga.
-- Cada tentativa sorteia um ponto em um disco limitado pelos limites visíveis da frase e pela área segura da janela. O pequeno deslocamento durante a pressão também varia e fica dentro do disco; não altera a duração protegida. Se a região é pequena, o raio diminui. Isso não garante indetectabilidade.
+- A versão 0.10.0 sorteava um ponto no cartão e variava ligeiramente o caminho da pressão. Esse comportamento foi removido na 0.11.0; a descrição fica registrada aqui apenas como histórico.
 - **Uma corrida:** após o Android aceitar o envio de um gesto, o serviço pausa novas ofertas. A repetição limitada da mesma oferta continua permitida. Cancelamento ou resultado inconclusivo também conservam a pausa, pois não há confirmação do servidor. O botão **Liberar próxima corrida** libera uma nova tentativa quando a anterior termina. A pausa é nativa/persistente e sincronizações, ajustes e reabertura não a apagam.
 - **Corridas seguidas:** mantém a busca por novas ofertas, inclusive durante uma viagem e com rolagem vertical limitada. Esse modo preserva o comportamento anterior e é o padrão de migração.
 - A escolha dos modos é feita no painel. A região é configurada em Calibrar. Calibração sobreposta bloqueia gestos automáticos; repetição e rolagem revalidam o desligamento.
@@ -18,12 +30,12 @@ Esta seção substitui o estado operacional das versões anteriores descrito aba
 - Teste de aceite real depende do aparelho do proprietário com POP driver autenticado.
 
 
-### Entrega confirmada da 0.10.0
+### Entrega histórica da 0.10.0
 
 - Build e publicação aprovados: https://github.com/samukkaneto/drivertouch-pop/actions/runs/39586593332
 - Código compilado: `9d231f62c1831710f9f8be3cf21b4a845f6941c9`.
 - APK: https://github.com/samukkaneto/drivertouch-pop/releases/download/v0.10.0/Toalha-Vermelha-0.10.0.apk
-- Release privada: https://github.com/samukkaneto/drivertouch-pop/releases/tag/v0.10.0
+- Página da release: https://github.com/samukkaneto/drivertouch-pop/releases/tag/v0.10.0
 - Tamanho: 59.560.764 bytes.
 - SHA-256: `587dcf234c3f34b0b1608ec97ef52410c25f441abedea1634c7ecc157c45f097`.
 - Package ID: `com.toalhaver.vermelha`; versionName `0.10.0`; versionCode `10`; nome `Toalha Vermelha`.
@@ -39,8 +51,8 @@ A base funcional foi confirmada pelo proprietário em 21/09/2026. A versão 0.9.
 
 ## 2. Backup canônico
 
-- Repositório: `samukkaneto/drivertouch-pop` (privado; o nome do app foi alterado sem mover o repositório).
-- Visibilidade: **PRIVATE**.
+- Repositório: `samukkaneto/drivertouch-pop` (público; o nome do app foi alterado sem mover o repositório).
+- Visibilidade atual: **PUBLIC**.
 - Branch principal: `main`.
 - Base funcional: `v0.8.0`; nova compilação em preparação: `v0.9.0` — `Toalha Vermelha`.
 - APK histórica preservada na release: `DriverTouch-Pop-0.8.0-execucao.apk`; a APK nova será publicada como `Toalha-Vermelha-0.9.0.apk`.
@@ -52,7 +64,7 @@ A base funcional foi confirmada pelo proprietário em 21/09/2026. A versão 0.9.
 - SHA-256 da APK 0.9.0: será registrado após o build.
 - Certificado: será registrado após o build; como o pacote mudou, a instalação será uma nova instalação e não atualização por cima.
 
-Como o repositório é privado, código e releases exigem uma conta GitHub autorizada. A release mantém a APK pronta para instalação; a branch `main` mantém o código, documentação, workflow e histórico.
+O repositório e suas releases são públicos. A branch `main` mantém o código, documentação, workflow e histórico.
 
 ## 3. Objetivo e escopo
 

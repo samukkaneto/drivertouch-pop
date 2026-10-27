@@ -162,7 +162,6 @@ class PopMoveAccessibilityService : AccessibilityService() {
       offerResolutionInProgress = false
       return
     }
-    val currentConfig = SafeAcceptStore.load(this)
     val safeAttempt = resolveVisibleMarkerAttempt(attempt)
     if (safeAttempt == null) {
       offerResolutionInProgress = false
@@ -182,10 +181,8 @@ class PopMoveAccessibilityService : AccessibilityService() {
       offerResolutionInProgress = false
       return
     }
-    val samples = TouchRegion.samplePath(
-      bounds.left.toFloat(), bounds.top.toFloat(), bounds.right.toFloat(), bounds.bottom.toFloat(),
-      resources.displayMetrics.widthPixels * currentConfig.touchRadius,
-      minOf(2f, android.view.ViewConfiguration.get(this).scaledTouchSlop / 4f)
+    val samples = TouchRegion.stablePath(
+      bounds.left.toFloat(), bounds.top.toFloat(), bounds.right.toFloat(), bounds.bottom.toFloat()
     ) ?: run {
       gestureInFlight = false
       offerResolutionInProgress = false

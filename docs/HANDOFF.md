@@ -1,14 +1,22 @@
 # Continuidade do projeto
 
-> Estado atualizado em 26/09/2026. Leia primeiro [`PROJECT_STATUS.md`](PROJECT_STATUS.md), que é o relatório mestre e a fonte de verdade para retomada.
+> Estado atualizado em 27/10/2026. Leia primeiro [`PROJECT_STATUS.md`](PROJECT_STATUS.md), que é o relatório mestre e a fonte de verdade para retomada.
 
-## Atualização 0.10.0 — 21/10/2026
+## Atualização 0.11.0 — 27/10/2026
+
+- Nome exibido: **Toalha Vermelha**; pacote `com.toalhaver.vermelha`; versionCode **11**.
+- Gesto automático estacionário no centro da frase de aceite visível; a variação aleatória e o deslocamento foram removidos.
+- Raio na tela Calibrar é apenas referência visual. Os modos **Uma corrida** e **Corridas seguidas** permanecem.
+- Android e aplicativos com acesso adequado ainda podem identificar o pacote e o serviço de Acessibilidade.
+- O APK será liberado na pré-release pública v0.11.0 depois de passar no workflow.
+
+## Histórico 0.10.0 — 21/10/2026
 
 Esta seção substitui o estado operacional das versões anteriores descrito abaixo.
 
 - Nome exibido: **Toalha Vermelha**; pacote mantido `com.toalhaver.vermelha`; versionCode **10**.
 - Calibrar oferece raios de **2%, 4% e 8% da largura da tela**, com prévia circular. Padrão 4%. O destino continua sendo relocalizado pela frase completa visível, nunca pela coordenada antiga.
-- Cada tentativa sorteia um ponto em um disco limitado pelos limites visíveis da frase e pela área segura da janela. O pequeno deslocamento durante a pressão também varia e fica dentro do disco; não altera a duração protegida. Se a região é pequena, o raio diminui. Isso não garante indetectabilidade.
+- A versão 0.10.0 variava o ponto e o caminho do gesto; a versão 0.11.0 remove essa variação.
 - **Uma corrida:** após o Android aceitar o envio de um gesto, o serviço pausa novas ofertas. A repetição limitada da mesma oferta continua permitida. Cancelamento ou resultado inconclusivo também conservam a pausa, pois não há confirmação do servidor. O botão **Liberar próxima corrida** libera uma nova tentativa quando a anterior termina. A pausa é nativa/persistente e sincronizações, ajustes e reabertura não a apagam.
 - **Corridas seguidas:** mantém a busca por novas ofertas, inclusive durante uma viagem e com rolagem vertical limitada. Esse modo preserva o comportamento anterior e é o padrão de migração.
 - A escolha dos modos é feita no painel. A região é configurada em Calibrar. Calibração sobreposta bloqueia gestos automáticos; repetição e rolagem revalidam o desligamento.
@@ -18,12 +26,12 @@ Esta seção substitui o estado operacional das versões anteriores descrito aba
 - Teste de aceite real depende do aparelho do proprietário com POP driver autenticado.
 
 
-### Entrega confirmada da 0.10.0
+### Entrega histórica da 0.10.0
 
 - Build e publicação aprovados: https://github.com/samukkaneto/drivertouch-pop/actions/runs/39586593332
 - Código compilado: `9d231f62c1831710f9f8be3cf21b4a845f6941c9`.
 - APK: https://github.com/samukkaneto/drivertouch-pop/releases/download/v0.10.0/Toalha-Vermelha-0.10.0.apk
-- Release privada: https://github.com/samukkaneto/drivertouch-pop/releases/tag/v0.10.0
+- Página da release: https://github.com/samukkaneto/drivertouch-pop/releases/tag/v0.10.0
 - Tamanho: 59.560.764 bytes.
 - SHA-256: `587dcf234c3f34b0b1608ec97ef52410c25f441abedea1634c7ecc157c45f097`.
 - Package ID: `com.toalhaver.vermelha`; versionName `0.10.0`; versionCode `10`; nome `Toalha Vermelha`.
@@ -33,7 +41,7 @@ Esta seção substitui o estado operacional das versões anteriores descrito aba
 
 ## Situação anterior (0.9.0)
 
-O Toalha Vermelha 0.9.0 mantém a base funcional da 0.8.0 e o proprietário confirmou que opera como deveria. A nova APK ainda precisa passar pelo build e teste físico. O repositório privado, a branch `main`, o histórico, os relatórios e as releases formam o backup oficial.
+O Toalha Vermelha 0.9.0 mantém a base funcional da 0.8.0 e o proprietário confirmou que opera como deveria. A APK de cada nova versão ainda precisa passar pelo build e teste físico. O repositório público, a branch `main`, o histórico, os relatórios e as releases formam o backup oficial.
 
 ## Objetivo
 

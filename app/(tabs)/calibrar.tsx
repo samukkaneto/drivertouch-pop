@@ -134,11 +134,11 @@ export default function CalibrationScreen() {
         ) : null}
       </SectionCard>
 
-      <SectionCard title="Raio da área de toque">
+      <SectionCard title="Guia visual da calibração">
         <Text style={styles.helper}>
-          Escolha o raio máximo. A cada tentativa, o ponto varia dentro da área
-          visível da frase de aceite; o raio é reduzido se necessário para caber
-          nela.
+          O círculo abaixo é apenas uma referência visual para posicionar a
+          frase. O gesto automático usa o centro do texto de aceite detectado na
+          tela; este raio não altera o ponto nem o movimento do toque.
         </Text>
         <View style={styles.inputRow}>
           {[0.02, 0.04, 0.08].map((radius) => (
@@ -146,7 +146,7 @@ export default function CalibrationScreen() {
               key={radius}
               accessibilityRole="radio"
               accessibilityState={{ checked: settings.touchRadius === radius }}
-              accessibilityLabel={`Raio de ${Math.round(radius * 100)} por cento da largura da tela`}
+              accessibilityLabel={`Guia visual de ${Math.round(radius * 100)} por cento da largura da tela`}
               onPress={() => setBehavior({ touchRadius: radius })}
               style={[
                 styles.radiusChoice,
@@ -158,8 +158,8 @@ export default function CalibrationScreen() {
           ))}
         </View>
         <Text style={styles.helper}>
-          Atual: {Math.round(settings.touchRadius * 100)}%. O círculo abaixo
-          representa o limite máximo; a área real acompanha a oferta na tela.
+          Guia atual: {Math.round(settings.touchRadius * 100)}% da largura da
+          tela. O círculo serve somente para visualização.
         </Text>
       </SectionCard>
 

@@ -12,7 +12,7 @@ cd android
 ./gradlew :safe-accept:testReleaseUnitTest :app:assembleRelease --no-daemon --stacktrace -PreactNativeArchitectures=arm64-v8a
 ```
 
-O workflow `.github/workflows/android-debug.yml` executa esses passos e entrega o APK ARM64 na pré-release privada `v0.10.0`. Após verificar a assinatura, o job de build com acesso somente de leitura transfere o APK por cache com chave exclusiva do commit/execução/tentativa. Um job separado, sem checkout ou instalação de dependências, verifica o SHA-256 e publica a release com a permissão mínima de conteúdo exigida pelo GitHub. Releases já existentes são preservadas. A mudança evita depender da cota de artefatos Actions, que estava esgotada em 21/10/2026.
+O workflow `.github/workflows/android-debug.yml` executa esses passos e entrega o APK ARM64 na pré-release pública `v0.11.0`. Após verificar a assinatura, o job de build com acesso somente de leitura transfere o APK por cache com chave exclusiva do commit/execução/tentativa. Um job separado, sem checkout ou instalação de dependências, verifica o SHA-256 e publica a release com a permissão mínima de conteúdo exigida pelo GitHub. Releases já existentes são preservadas. A mudança evita depender da cota de artefatos Actions, que estava esgotada em 21/10/2026.
 
 ## Windows sem Android Studio
 
@@ -32,9 +32,10 @@ android\app\build\outputs\apk\release\app-release.apk
 
 O sucesso do Gradle prova que o código compila e a APK é instalável. A confirmação de que o POP driver efetivamente mudou para o estado de corrida aceita só existe no aparelho autenticado, pois esse estado pertence ao serviço externo da PopMove.
 
-## Verificar os modos e a área (0.10.0)
+## Verificar os modos e a referência visual (0.11.0)
 
-- Mudar o raio em Calibrar e confirmar que a seleção persiste ao reabrir.
+- Mudar o tamanho do guia visual em Calibrar e confirmar que a seleção persiste ao reabrir; isso não deve alterar o gesto automático.
+- Com uma frase de aceite visível, confirmar que o caminho gerado tem dois pontos iguais no centro dos limites detectados.
 - Em Uma corrida, confirmar a pausa depois da tentativa, inclusive reabrindo o app e alterando o raio; nenhuma segunda oferta deve receber gesto antes de Liberar próxima corrida.
 - Em Corridas seguidas, conferir o comportamento já existente de nova oferta durante viagem.
 - Desligar durante uma espera de repetição deve impedir o próximo gesto.
