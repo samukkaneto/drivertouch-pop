@@ -8,7 +8,8 @@
 - Gesto automático estacionário no centro da frase de aceite visível; a variação aleatória e o deslocamento foram removidos.
 - Raio na tela Calibrar é apenas referência visual. Os modos **Uma corrida** e **Corridas seguidas** permanecem.
 - Android e aplicativos com acesso adequado ainda podem identificar o pacote e o serviço de Acessibilidade.
-- O APK será liberado na pré-release pública v0.11.0 depois de passar no workflow.
+- APK público: [Toalha Vermelha 0.11.0](https://github.com/samukkaneto/drivertouch-pop/releases/download/v0.11.0/Toalha-Vermelha-0.11.0.apk), workflow aprovado `40516216505`.
+- Pacote `com.toalhaver.vermelha`, versionCode 11. SHA-256 `a9c69ee60c26e4862d6b5f525937e40a901260b97f92b1a0e207426ae55883b2`; assinatura verificada e compatível com a 0.10.0.
 
 ## Histórico 0.10.0 — 21/10/2026
 

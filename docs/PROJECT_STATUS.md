@@ -12,7 +12,10 @@ Esta é a versão em preparação para substituir a 0.10.0.
 - **Uma corrida** e **Corridas seguidas** continuam disponíveis. Uma corrida pausa novas ofertas após uma tentativa; Corridas seguidas mantém a busca por novas ofertas.
 - O pacote e o serviço de Acessibilidade continuam visíveis para o Android e para aplicativos que tenham acesso adequado. Trocar o rótulo ou o identificador do pacote não oculta o serviço.
 - Os testes Kotlin verificam o caminho estacionário no centro, regiões inválidas e as regras dos modos de corrida. O workflow GitHub Actions fará tipagem, testes, lint, build Android e verificação da assinatura antes da publicação.
-- APK 0.11.0: será publicado na pré-release pública após o workflow concluir. Não instalar até confirmar o resultado do build abaixo.
+- Workflow aprovado: https://github.com/samukkaneto/drivertouch-pop/actions/runs/40516216505; commit compilado `094cf2620ab8e6d82c015d60b43df3da9bc8edef`.
+- APK público: https://github.com/samukkaneto/drivertouch-pop/releases/download/v0.11.0/Toalha-Vermelha-0.11.0.apk (59.560.832 bytes; SHA-256 `a9c69ee60c26e4862d6b5f525937e40a901260b97f92b1a0e207426ae55883b2`).
+- AAPT confirmou `com.toalhaver.vermelha`, versionName `0.11.0` e versionCode `11`; assinatura v2 verificada. O certificado SHA-256 é o mesmo da 0.10.0: `fac61745dc0903786fb9ede62a962b399f7348f0bb6f899b8332667591033b9c`.
+- Tipagem, 18 testes Vitest, lint, testes Kotlin/JUnit e build Android passaram. O aceite real ainda depende de validação no aparelho autenticado.
 
 ## Histórico 0.10.0 — 21/10/2026
 
