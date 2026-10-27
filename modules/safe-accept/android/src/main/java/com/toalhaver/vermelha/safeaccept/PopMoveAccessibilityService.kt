@@ -162,6 +162,7 @@ class PopMoveAccessibilityService : AccessibilityService() {
       offerResolutionInProgress = false
       return
     }
+    val currentConfig = SafeAcceptStore.load(this)
     val safeAttempt = resolveVisibleMarkerAttempt(attempt)
     if (safeAttempt == null) {
       offerResolutionInProgress = false
