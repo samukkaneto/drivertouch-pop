@@ -41,7 +41,7 @@ export type CardSample = {
 };
 
 export type DiagnosticSnapshot = {
-  schema: 1 | 2;
+  schema: 1 | 2 | 3;
   appVersion: string;
   popMoveVersion: string;
   device: string;
@@ -56,6 +56,7 @@ export type DiagnosticSnapshot = {
   lastOffer: NotificationSample | null;
   notificationHistory?: NotificationSample[];
   lastCard?: CardSample | null;
+  controlTest?: { startedAt: number; commandCountAtStart: number } | null;
   pressCount: number;
   longClickCount?: number;
   scrollCount: number;
@@ -73,7 +74,7 @@ export type DiagnosticSnapshot = {
 
 export function cardConclusion(card?: CardSample | null): string {
   if (!card)
-    return "Nenhum cartão foi analisado pelo novo método. Ative Comando do cartão no painel e aguarde uma oferta visível no PopMove.";
+    return "Nenhum cartão foi analisado pelo novo método. Use Iniciar teste de uma oferta nesta tela e aguarde uma oferta visível no PopMove.";
   if (card.performed === true)
     return "O controle respondeu ao comando. Isso não confirma aceite da corrida nem ausência de aviso; registre o que aconteceu no PopMove.";
   if (card.performed === false)
@@ -91,6 +92,53 @@ export function cardConclusion(card?: CardSample | null): string {
       "Foi encontrado um comando disponível; envio ainda não registrado.",
   };
   return `${reasons[card.reason] ?? "Resultado inconclusivo."} Nenhum toque substituto foi enviado.`;
+}
+
+export function controlTestStatus(s: DiagnosticSnapshot): {
+  title: string;
+  detail: string;
+  active: boolean;
+} {
+  const currentCard =
+    s.lastCard && (!s.controlTest || s.lastCard.at >= s.controlTest.startedAt)
+      ? s.lastCard
+      : null;
+  if (currentCard)
+    return {
+      title:
+        currentCard.performed === undefined
+          ? "Cartão analisado — comando não enviado"
+          : "Tentativa realizada",
+      detail: cardConclusion(currentCard),
+      active: false,
+    };
+  if (s.state.diagnosticMode || !s.state.automationArmed)
+    return {
+      title: "Teste pausado — nenhuma tentativa em andamento",
+      detail:
+        "A execução está desativada. Sem tentar o comando, esta etapa não avalia o aviso na execução. Toque em Iniciar teste de uma oferta.",
+      active: false,
+    };
+  if (s.state.inputMethod !== "control")
+    return {
+      title: "Outro método selecionado",
+      detail:
+        "Iniciar teste de uma oferta seleciona Comando do cartão e Uma corrida.",
+      active: false,
+    };
+  if (!s.state.accessibilityGranted || !s.state.accessibilityConnected)
+    return {
+      title: "Teste sem conexão com a Acessibilidade",
+      detail:
+        "O serviço precisa estar autorizado e conectado para executar o comando. Confira os ajustes de acessibilidade.",
+      active: false,
+    };
+  return {
+    title: "Teste ativo — aguardando oferta",
+    detail:
+      "Abra o PopMove e deixe o cartão da oferta visível. A execução vai pausar depois de analisar uma oferta.",
+    active: true,
+  };
 }
 
 export const actionLabels: Record<DiagnosticAction["category"], string> = {
@@ -126,6 +174,7 @@ const stateLine = (s: DiagnosticState) =>
   `Diagnóstico: ${yesNo(s.diagnosticMode)}; execução armada: ${yesNo(s.automationArmed)}; método: ${s.inputMethod === "control" ? "comando do cartão" : s.inputMethod === "gesture" ? "toque anterior" : "não registrado"}; acessibilidade autorizada/conectada: ${yesNo(s.accessibilityGranted)}/${yesNo(s.accessibilityConnected)}; notificações autorizadas/conectadas: ${yesNo(s.notificationGranted)}/${yesNo(s.notificationConnected)}`;
 
 export function formatDiagnosticReport(s: DiagnosticSnapshot): string {
+  const testStatus = controlTestStatus(s);
   const sampleLines = (
     name: string,
     sample: NotificationSample | null,
@@ -147,6 +196,12 @@ export function formatDiagnosticReport(s: DiagnosticSnapshot): string {
     `Aparelho: ${s.device}; Android ${s.androidVersion} (API ${s.sdk}); PopMove ${s.popMoveVersion}`,
     `Início: ${at(s.startedAt)}; relatório: ${at(s.generatedAt)}. Horários em UTC.`,
     stateLine(s.state),
+    `Estado do teste: ${testStatus.title}. ${testStatus.detail}`,
+    ...(s.controlTest
+      ? [
+          `Teste iniciado explicitamente: ${at(s.controlTest.startedAt)}; comandos do cartão desde o início: ${Math.max(0, (s.longClickCount ?? 0) - s.controlTest.commandCountAtStart)}`,
+        ]
+      : []),
     `Eventos de notificação: ${s.notificationEvents}; com frase de oferta: ${s.offerEvents}. Incluem atualizações da mesma oferta.`,
     ...sampleLines("Última oferta", s.lastOffer),
     ...sampleLines("Última notificação do PopMove", s.lastNotification),
@@ -179,7 +234,7 @@ export function formatDiagnosticReport(s: DiagnosticSnapshot): string {
             : []),
         ])
       : ["Nenhuma observação registrada."]),
-    `Avaliação: ${diagnosticConclusion(s)}`,
+    `Avaliação das notificações: ${diagnosticConclusion(s)}`,
     "A amostra vinculada é a última conhecida no momento do registro, não uma confirmação automática de qual oferta o usuário viu. Atualizações posteriores não a substituem.",
     "A ausência de aviso nesta medição não comprova indetectabilidade. Sem textos, endereços, valores, nomes de passageiros ou conteúdo dos comandos.",
   ].join("\n");

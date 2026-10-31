@@ -27,6 +27,16 @@ object DiagnosticStore {
   }
 
   @Synchronized
+  fun beginControlTest(context: Context) {
+    val p = prefs(context)
+    val now = System.currentTimeMillis()
+    p.edit().putLong("startedAt", p.getLong("startedAt", now))
+      .putString("controlTest", JSONObject().put("startedAt", now)
+        .put("commandCountAtStart", p.getInt("longClickCount", 0)).toString())
+      .remove("lastCard").commit()
+  }
+
+  @Synchronized
   fun observeNotification(context: Context, sbn: StatusBarNotification, offerRecognized: Boolean) {
     if (sbn.packageName != TARGET) return
     val actions = sbn.notification.actions.orEmpty()
@@ -103,7 +113,7 @@ object DiagnosticStore {
   fun snapshot(context: Context, state: JSONObject): String {
     val p = prefs(context)
     return JSONObject()
-      .put("schema", 2)
+      .put("schema", 3)
       .put("appVersion", packageVersion(context, context.packageName))
       .put("popMoveVersion", packageVersion(context, TARGET))
       .put("device", "${Build.MANUFACTURER} ${Build.MODEL}")
@@ -118,6 +128,7 @@ object DiagnosticStore {
       .put("lastOffer", readObject(p.getString("lastOffer", null)))
       .put("notificationHistory", readArray(p.getString("notificationHistory", null)))
       .put("lastCard", readObject(p.getString("lastCard", null)))
+      .put("controlTest", readObject(p.getString("controlTest", null)))
       .put("pressCount", p.getInt("pressCount", 0))
       .put("longClickCount", p.getInt("longClickCount", 0))
       .put("scrollCount", p.getInt("scrollCount", 0))

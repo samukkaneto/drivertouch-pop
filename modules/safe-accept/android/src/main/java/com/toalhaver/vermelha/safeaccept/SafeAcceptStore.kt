@@ -103,6 +103,17 @@ object SafeAcceptStore {
       .putString("input_method", method).commit()
   }
 
+  fun armSingleControlTest(context: Context, x: Double, y: Double) {
+    require(x.isFinite() && y.isFinite() && x in 0.0..1.0 && y in 0.0..1.0)
+    context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+      .putBoolean(KEY_ARMED, true).putString(KEY_MODE, "assist")
+      .putString("input_method", "control").putString(KEY_RIDE_MODE, "single")
+      .putFloat(KEY_X, x.toFloat()).putFloat(KEY_Y, y.toFloat())
+      .remove(KEY_SINGLE_IDENTITY).remove(KEY_HANDLED_OFFER_IDENTITY).remove(KEY_HANDLED_OFFER_AT)
+      .commit()
+    record(context, "system", "Teste de uma oferta solicitado; comando do cartão selecionado")
+  }
+
   fun canDispatch(context: Context, identity: String, retry: Boolean): Boolean {
     val config = load(context)
     val consumed = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)

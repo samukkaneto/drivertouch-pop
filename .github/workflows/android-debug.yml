@@ -5,7 +5,7 @@ on:
   push:
     branches:
       - main
-      - codex/controle-0.13.1
+      - codex/teste-direto-0.13.2
 
 permissions:
   contents: read
@@ -76,16 +76,16 @@ jobs:
       - name: Stage verified APK for delivery
         run: |
           mkdir apk-delivery
-          cp android/app/build/outputs/apk/release/app-release.apk apk-delivery/Toalha-Vermelha-0.13.1-teste-controle.apk
+          cp android/app/build/outputs/apk/release/app-release.apk apk-delivery/Toalha-Vermelha-0.13.2-teste-direto.apk
           cp apk-info.txt apk-delivery/
           cd apk-delivery
-          sha256sum Toalha-Vermelha-0.13.1-teste-controle.apk > apk.sha256
+          sha256sum Toalha-Vermelha-0.13.2-teste-direto.apk > apk.sha256
 
       - name: Make APK available as a downloadable artifact
         uses: actions/upload-artifact@v4
         continue-on-error: true
         with:
-          name: Toalha-Vermelha-0.13.1-teste-controle
+          name: Toalha-Vermelha-0.13.2-teste-direto
           path: apk-delivery/*
           retention-days: 3
           compression-level: 0
@@ -119,10 +119,10 @@ jobs:
           GH_REPO: ${{ github.repository }}
         run: |
           sha256sum --check apk.sha256
-          if gh release view v0.13.1 >/dev/null 2>&1; then
+          if gh release view v0.13.2 >/dev/null 2>&1; then
             echo "Existing release preserved."
           else
-            gh release create v0.13.1 Toalha-Vermelha-0.13.1-teste-controle.apk apk-info.txt apk.sha256 \
-              --target "$GITHUB_SHA" --title "Toalha Vermelha 0.13.1 — Teste do comando do cartão" --prerelease \
-              --notes "Teste experimental do ACTION_LONG_CLICK anunciado pelo cartão visível. Não usa gesto substituto nem rolagem nesse método. Inclui histórico de notificações e amostra preservada ao registrar observações. Inicia pausado na atualização; mantém Uma corrida, Corridas seguidas e Toque anterior. Aceite e comportamento do aviso ainda dependem de teste no Moto G84. APK ARM64 com testes e assinatura verificados."
+            gh release create v0.13.2 Toalha-Vermelha-0.13.2-teste-direto.apk apk-info.txt apk.sha256 \
+              --target "$GITHUB_SHA" --title "Toalha Vermelha 0.13.2 — Início direto do teste" --prerelease \
+              --notes "Botão Iniciar teste de uma oferta na tela de diagnóstico: seleciona Comando do cartão, Uma corrida e ativa a execução em uma operação confirmada pelo Android. Mostra claramente teste pausado, aguardando oferta e tentativa realizada. Corrige a ordem de sincronização das configurações e mantém os métodos anteriores. O método de aceite é o mesmo da 0.13.1; aceite real e aviso ainda precisam do teste no Moto G84. APK com testes e assinatura verificados."
           fi

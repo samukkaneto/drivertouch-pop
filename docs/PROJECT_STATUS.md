@@ -2,6 +2,17 @@
 
 Atualizado em **31/10/2026**. Este documento é a fonte principal para qualquer pessoa ou IA que precise entender e continuar o projeto sem acesso às conversas anteriores.
 
+## Atualização 0.13.2 — iniciar o teste diretamente
+
+- Branch `codex/teste-direto-0.13.2`; versão 0.13.2 / código 15, pacote preservado.
+- Relatório recebido da 0.13.1: ambos os serviços autorizados/conectados, diagnóstico ativo, execução desarmada, zero comandos e nenhum cartão analisado. Não foi um teste da ação; o proprietário reiterou que o aviso aparece somente na tentativa de toque. Não pedir mais uma comparação ociosa.
+- Problema de fluxo: a ação destacada no diagnóstico apagava o relatório/pausava, enquanto iniciar exigia ir ao painel. Agora **Iniciar teste de uma oferta** seleciona Comando do cartão, Uma corrida, libera a pausa anterior e ativa nativamente em uma operação explícita.
+- A ativação só é confirmada após o Android verificar permissão, conexão do serviço, calibração e ausência de execução em andamento. Falha mostra motivo específico; não informa sucesso apenas por mudar o estado React.
+- Sincronizações nativas seguem uma fila para uma configuração antiga não desligar o teste depois da ativação. Estado visível distingue teste pausado, aguardando oferta, cartão analisado sem envio e tentativa realizada.
+- Diagnóstico v3 registra o início explícito e número de comandos desde o início do teste. O histórico anterior e as observações continuam preservados.
+- O método de aceite continua o da 0.13.1. Esta correção trata a ativação e o resultado visível; não confirma que o aviso foi resolvido.
+- TypeScript, ESLint, Vitest e build Android serão verificados antes da entrega; procedimento em [`DIAGNOSTICO.md`](DIAGNOSTICO.md).
+
 ## Entrega verificada — 0.13.1
 
 - Esta é a APK entregue nesta atualização; substitui a compilação intermediária 0.13.0.

@@ -46,6 +46,10 @@ declare class SafeAcceptBridgeModule extends NativeModule {
   beginDiagnostics(): Promise<boolean>;
   endDiagnostics(): Promise<boolean>;
   setInputMethod(method: "control" | "gesture"): Promise<boolean>;
+  startSingleControlTest(
+    x: number,
+    y: number,
+  ): Promise<{ started: boolean; reason: string }>;
   getDiagnostics(): Promise<string>;
   recordDiagnosticObservation(
     result: "appeared" | "not_observed",

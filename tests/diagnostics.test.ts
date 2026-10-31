@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   cardConclusion,
+  controlTestStatus,
   diagnosticConclusion,
   formatDiagnosticReport,
 } from "../lib/diagnostics";
@@ -48,6 +49,68 @@ const offer: NotificationSample = {
 };
 
 describe("diagnostic evidence", () => {
+  it("identifies the reported connected-but-paused state as no execution trial", () => {
+    const paused: DiagnosticSnapshot = {
+      ...snapshot,
+      schema: 3,
+      notificationEvents: 24,
+      offerEvents: 16,
+      state: {
+        ...snapshot.state,
+        inputMethod: "control",
+        accessibilityGranted: true,
+        accessibilityConnected: true,
+        notificationConnected: true,
+      },
+      lastOffer: offer,
+    };
+    expect(controlTestStatus(paused).title).toContain("Teste pausado");
+    expect(controlTestStatus(paused).active).toBe(false);
+    expect(formatDiagnosticReport(paused)).toContain(
+      "Sem tentar o comando, esta etapa não avalia o aviso na execução",
+    );
+  });
+
+  it("reports a native-confirmed active trial without confusing it with an older card result", () => {
+    const active: DiagnosticSnapshot = {
+      ...snapshot,
+      schema: 3,
+      state: {
+        ...snapshot.state,
+        inputMethod: "control",
+        diagnosticMode: false,
+        automationArmed: true,
+        accessibilityGranted: true,
+        accessibilityConnected: true,
+      },
+      longClickCount: 4,
+      controlTest: { startedAt: 200, commandCountAtStart: 4 },
+      lastCard: {
+        at: 100,
+        reason: "available",
+        markerNodes: 1,
+        longClickNodes: 1,
+        pressAndHoldNodes: 0,
+        eligibleNodes: 1,
+        available: true,
+        performed: true,
+      },
+    };
+    expect(controlTestStatus(active).title).toBe(
+      "Teste ativo — aguardando oferta",
+    );
+    expect(controlTestStatus(active).active).toBe(true);
+    expect(formatDiagnosticReport(active)).toContain(
+      "comandos do cartão desde o início: 0",
+    );
+    expect(
+      controlTestStatus({
+        ...active,
+        state: { ...active.state, accessibilityConnected: false },
+      }).active,
+    ).toBe(false);
+  });
+
   it("does not confuse no received offer with an offer without actions", () => {
     expect(diagnosticConclusion(snapshot)).toContain("Ainda não foi observada");
     expect(diagnosticConclusion({ ...snapshot, lastOffer: offer })).toContain(

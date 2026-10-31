@@ -112,6 +112,24 @@ class SafeAcceptBridgeModule : Module() {
       }
     }.runOnQueue(Queues.MAIN)
 
+    // One user action, one native transition. No gesture is dispatched from this screen.
+    AsyncFunction("startSingleControlTest") { x: Double, y: Double ->
+      val blocker = when {
+        !isAccessibilityServiceEnabled() -> "accessibility_disabled"
+        !PopMoveAccessibilityService.serviceIsEnabled -> "accessibility_disconnected"
+        !x.isFinite() || !y.isFinite() || x !in 0.0..1.0 || y !in 0.0..1.0 -> "calibration_required"
+        !PopMoveAccessibilityService.prepareDiagnostics() -> "busy"
+        else -> null
+      }
+      if (blocker != null) mapOf("started" to false, "reason" to blocker) else {
+        SafeAcceptStore.armSingleControlTest(context, x, y)
+        DiagnosticStore.end(context)
+        val armed = SafeAcceptStore.load(context).armed
+        if (armed) DiagnosticStore.beginControlTest(context) else SafeAcceptStore.disable(context)
+        mapOf("started" to armed, "reason" to if (armed) "started" else "activation_failed")
+      }
+    }.runOnQueue(Queues.MAIN)
+
     AsyncFunction("recordDiagnosticObservation") { result: String ->
       DiagnosticStore.observation(context, result, diagnosticState())
       true

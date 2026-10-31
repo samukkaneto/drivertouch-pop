@@ -336,6 +336,7 @@ class PopMoveAccessibilityService : AccessibilityService() {
           !isTargetWindowActive() || !target.refresh() || !target.isEnabled || !target.isVisibleToUser ||
           !target.isLongClickable || target.actionList.none { it.id == AccessibilityNodeInfo.ACTION_LONG_CLICK }) {
         DiagnosticStore.card(this, scan.metadata.put("reason", "changed_before_action").put("available", false))
+        SafeAcceptStore.consumeSingleRide(this, attempt.identity)
         return
       }
       // Only invoke the action advertised by the visible card. No coordinate gesture or retry fallback.

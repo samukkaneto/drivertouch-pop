@@ -12,6 +12,7 @@ import { clampNormalized } from "@/lib/calibration";
 import {
   disableNativeService,
   syncSettingsToNative,
+  startNativeSingleControlTest,
 } from "@/lib/safe-accept-bridge";
 import {
   DEFAULT_SETTINGS,
@@ -43,6 +44,7 @@ type SafeAcceptContextValue = {
   addEvent: (type: EventRecord["type"], message: string) => void;
   clearEvents: () => void;
   disableNow: () => Promise<void>;
+  startSingleControlTest: () => Promise<{ started: boolean; reason: string }>;
 };
 
 const SafeAcceptContext = createContext<SafeAcceptContextValue | null>(null);
@@ -198,6 +200,24 @@ export function SafeAcceptProvider({
     }));
   }, []);
 
+  const startSingleControlTest = useCallback(async () => {
+    if (isLoading) return { started: false, reason: "loading" };
+    const result = await startNativeSingleControlTest(settings);
+    if (result.started) {
+      setSettings((current) => ({
+        ...current,
+        mode: "assist",
+        isArmed: true,
+        rideMode: "single",
+        events: [
+          createEvent("system", "Teste de uma oferta ativado pelo Android."),
+          ...current.events,
+        ].slice(0, MAX_EVENTS),
+      }));
+    }
+    return result;
+  }, [isLoading, settings]);
+
   const value = useMemo(
     () => ({
       settings,
@@ -210,6 +230,7 @@ export function SafeAcceptProvider({
       addEvent,
       clearEvents,
       disableNow,
+      startSingleControlTest,
     }),
     [
       settings,
@@ -222,6 +243,7 @@ export function SafeAcceptProvider({
       addEvent,
       clearEvents,
       disableNow,
+      startSingleControlTest,
     ],
   );
 

@@ -1,5 +1,6 @@
 import { Platform } from "react-native";
 import type { DiagnosticSnapshot } from "@/lib/diagnostics";
+import { createNativeConfigQueue } from "@/lib/native-config-queue";
 
 import SafeAcceptBridgeModule from "@/modules/safe-accept/src/SafeAcceptBridgeModule";
 import type {
@@ -21,28 +22,31 @@ type NativeStatus = {
 };
 
 const bridge = SafeAcceptBridgeModule;
+const enqueueConfig = createNativeConfigQueue();
 
 export function isNativeBridgeAvailable() {
   return Platform.OS === "android" && Boolean(bridge);
 }
 
 export async function syncSettingsToNative(settings: SafeAcceptSettings) {
-  if (!bridge) return false;
-  if (!settings.calibration) {
-    await bridge.disableNow();
-    return false;
-  }
+  return enqueueConfig(async () => {
+    if (!bridge) return false;
+    if (!settings.calibration) {
+      await bridge.disableNow();
+      return false;
+    }
 
-  await bridge.updateBehavior(settings.rideMode, settings.touchRadius);
-  return bridge.updateConfig(
-    settings.isArmed,
-    settings.mode,
-    settings.calibration.x,
-    settings.calibration.y,
-    settings.longPressDurationMs,
-    settings.detectionDelayMs,
-    settings.acceptMarker.trim().toLowerCase(),
-  );
+    await bridge.updateBehavior(settings.rideMode, settings.touchRadius);
+    return bridge.updateConfig(
+      settings.isArmed,
+      settings.mode,
+      settings.calibration.x,
+      settings.calibration.y,
+      settings.longPressDurationMs,
+      settings.detectionDelayMs,
+      settings.acceptMarker.trim().toLowerCase(),
+    );
+  });
 }
 
 export async function openNativeAccessibilitySettings() {
@@ -80,15 +84,32 @@ export async function resumeSingleRide() {
 }
 
 export async function beginDiagnostics() {
-  return bridge ? bridge.beginDiagnostics() : false;
+  return enqueueConfig(async () =>
+    bridge ? bridge.beginDiagnostics() : false,
+  );
 }
 
 export async function endDiagnostics() {
-  return bridge ? bridge.endDiagnostics() : false;
+  return enqueueConfig(async () => (bridge ? bridge.endDiagnostics() : false));
 }
 
 export async function setNativeInputMethod(method: "control" | "gesture") {
-  return bridge ? bridge.setInputMethod(method) : false;
+  return enqueueConfig(async () =>
+    bridge ? bridge.setInputMethod(method) : false,
+  );
+}
+
+export async function startNativeSingleControlTest(
+  settings: SafeAcceptSettings,
+) {
+  return enqueueConfig(async () =>
+    bridge
+      ? bridge.startSingleControlTest(
+          settings.calibration?.x ?? -1,
+          settings.calibration?.y ?? -1,
+        )
+      : { started: false, reason: "native_unavailable" },
+  );
 }
 
 export async function getDiagnostics(): Promise<DiagnosticSnapshot> {
@@ -104,8 +125,7 @@ export async function recordDiagnosticObservation(
 }
 
 export async function disableNativeService() {
-  if (!bridge) return false;
-  return bridge.disableNow();
+  return enqueueConfig(async () => (bridge ? bridge.disableNow() : false));
 }
 
 export async function getNativeEvents(): Promise<NativeEventRecord[]> {
