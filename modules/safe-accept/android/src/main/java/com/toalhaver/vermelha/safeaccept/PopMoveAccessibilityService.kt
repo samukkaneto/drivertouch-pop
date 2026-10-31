@@ -40,6 +40,7 @@ class PopMoveAccessibilityService : AccessibilityService() {
     val markerCenterX: Float?,
     val markerCenterY: Float?,
     val fingerprint: String,
+    val controlFingerprint: String,
     val safeBounds: Rect,
     val markerBounds: Rect?
   )
@@ -125,8 +126,8 @@ class PopMoveAccessibilityService : AccessibilityService() {
     val minimumInterval = config.longPressDurationMs + config.detectionDelayMs + 200L
     if (now - lastGestureAt < minimumInterval) return
 
-    val identity = notificationFingerprint?.let { "notification:$it" }
-      ?: "screen:${snapshot.fingerprint}"
+    val identity = if (config.inputMethod == "control") "control:${snapshot.controlFingerprint}"
+      else notificationFingerprint?.let { "notification:$it" } ?: "screen:${snapshot.fingerprint}"
     if (!SafeAcceptStore.claimOfferIdentity(this, identity)) return
 
     val x = snapshot.markerCenterX ?: return
@@ -505,6 +506,7 @@ class PopMoveAccessibilityService : AccessibilityService() {
       markerCenterX = bounds?.exactCenterX(),
       markerCenterY = bounds?.exactCenterY(),
       fingerprint = sha256(stableText),
+      controlFingerprint = sha256(ControlActionPolicy.stableOfferText(allTexts)),
       safeBounds = Rect(safeBounds),
       markerBounds = bounds?.let { Rect(it) }
     )

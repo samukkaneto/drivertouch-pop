@@ -4,6 +4,13 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class ControlActionPolicyTest {
+  @Test fun notificationRefreshesAndCountdownsDoNotChangeCardIdentity() {
+    val first = listOf("pressione e segure para atender", "rua a", "20 s", "14:30")
+    val later = listOf("14:31", "19 s", "rua a", "pressione e segure para atender")
+    assertEquals(ControlActionPolicy.stableOfferText(first), ControlActionPolicy.stableOfferText(later))
+    assertNotEquals(ControlActionPolicy.stableOfferText(first), ControlActionPolicy.stableOfferText(first + "rua b"))
+  }
+
   private val screen = ControlBounds(0, 40, 1080, 2000)
   private val card = ControlBounds(20, 180, 1060, 700)
   private fun allowed(b: ControlBounds = card, visible: Boolean = true, enabled: Boolean = true,

@@ -8,6 +8,12 @@ data class ControlBounds(val left: Int, val top: Int, val right: Int, val bottom
 }
 
 object ControlActionPolicy {
+  /** Notification refreshes and countdown labels must not turn one card into another attempt. */
+  fun stableOfferText(texts: List<String>): String = texts.map {
+    it.replace(Regex("\\b\\d+\\s*(min|minuto|minutos|seg|segundo|segundos|s)\\b"), "")
+      .trim()
+  }.filter { it.isNotBlank() && !it.matches(Regex("[\\d\\s:]+")) }.distinct().sorted().joinToString("|")
+
   fun eligible(bounds: ControlBounds, safe: ControlBounds, visible: Boolean, enabled: Boolean,
                correctPackage: Boolean, markerPresent: Boolean, longClickable: Boolean, advertised: Boolean): Boolean =
     visible && enabled && correctPackage && markerPresent && longClickable && advertised &&

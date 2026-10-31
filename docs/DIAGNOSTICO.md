@@ -1,4 +1,4 @@
-# Toalha Vermelha 0.13.0 — teste do comando do cartão
+# Toalha Vermelha 0.13.1 — teste do comando do cartão
 
 ## Evidência e objetivo
 
@@ -8,7 +8,7 @@ O próximo teste verifica se o cartão expõe um `ACTION_LONG_CLICK` utilizável
 
 ## Instalação e teste no Moto G84 5G / Android 15
 
-1. Instalar 0.13.0 sobre a anterior. Pacote e certificado devem ser iguais; o build confere a assinatura. A atualização inicia pausada e preserva a calibração.
+1. Instalar 0.13.1 sobre a anterior. Pacote e certificado devem ser iguais; o build confere a assinatura. A atualização inicia pausada e preserva a calibração.
 2. Com o veículo estacionado, habilitar Acessibilidade e acesso às notificações do Toalha Vermelha.
 3. No painel, selecionar **Comando do cartão · teste** e **Uma corrida**, ativar a execução e confirmar.
 4. Manter o PopMove em primeiro plano e o cartão da oferta visível. Este método não rola a tela.
