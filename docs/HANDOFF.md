@@ -2,6 +2,16 @@
 
 > Estado atualizado em 31/10/2026. Leia primeiro [`PROJECT_STATUS.md`](PROJECT_STATUS.md), que é o relatório mestre e a fonte de verdade para retomada.
 
+## Entrega verificada — 0.12.0
+
+- Build e publicação aprovados: https://github.com/samukkaneto/drivertouch-pop/actions/runs/41164428370
+- Commit compilado: `a31ab6d02999530f23be113c204bf182a1dc28f4`.
+- APK: https://github.com/samukkaneto/drivertouch-pop/releases/download/v0.12.0/Toalha-Vermelha-0.12.0-diagnostico.apk
+- Tamanho: 59.595.260 bytes. SHA-256: `b8a9a0330478c548e7c4fa633f3e4284d99bb728d4b552bcbb694a0bb3efba5d`.
+- Identidade verificada: `com.toalhaver.vermelha`, versionName 0.12.0, versionCode 12; certificado SHA-256 `fac61745dc0903786fb9ede62a962b399f7348f0bb6f899b8332667591033b9c`, igual ao da 0.11.0.
+- TypeScript, lint, 22 testes Vitest, testes Kotlin/JUnit, build Android e assinatura aprovados.
+- Pendente: medição no Moto G84. Esta entrega é diagnóstica e não confirma que o aviso de autoclique foi resolvido.
+
 ## Atualização 0.12.0 — diagnóstico
 
 - Preparada na branch `codex/diagnostico-0.12.0`; nome e pacote preservados, versionCode 12.
