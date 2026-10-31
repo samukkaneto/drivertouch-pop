@@ -9,6 +9,7 @@ import android.view.accessibility.AccessibilityManager
 import expo.modules.kotlin.functions.Queues
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
+import org.json.JSONObject
 
 class SafeAcceptBridgeModule : Module() {
   private val context: Context
@@ -70,6 +71,7 @@ class SafeAcceptBridgeModule : Module() {
       val config = SafeAcceptStore.load(context)
       mapOf(
         "serviceEnabled" to isAccessibilityServiceEnabled(),
+        "diagnosticMode" to DiagnosticStore.isEnabled(context),
         "notificationListenerEnabled" to isNotificationListenerEnabled(),
         "recentOfferNotification" to SafeAcceptStore.recentOfferNotification(context),
         "armed" to config.armed,
@@ -82,6 +84,30 @@ class SafeAcceptBridgeModule : Module() {
     AsyncFunction("getEvents") {
       SafeAcceptStore.events(context)
     }
+
+    AsyncFunction("beginDiagnostics") {
+      if (!PopMoveAccessibilityService.prepareDiagnostics()) false else {
+        DiagnosticStore.begin(context)
+        SafeAcceptStore.disable(context)
+        true
+      }
+    }.runOnQueue(Queues.MAIN)
+
+    // Called only after the user explicitly chooses to reactivate the existing automation.
+    AsyncFunction("endDiagnostics") {
+      SafeAcceptStore.disable(context)
+      DiagnosticStore.end(context)
+      true
+    }.runOnQueue(Queues.MAIN)
+
+    AsyncFunction("getDiagnostics") {
+      DiagnosticStore.snapshot(context, diagnosticState())
+    }.runOnQueue(Queues.MAIN)
+
+    AsyncFunction("recordDiagnosticObservation") { result: String ->
+      DiagnosticStore.observation(context, result, diagnosticState())
+      true
+    }.runOnQueue(Queues.MAIN)
 
     AsyncFunction("clearEvents") {
       SafeAcceptStore.clearEvents(context)
@@ -109,6 +135,14 @@ class SafeAcceptBridgeModule : Module() {
         service.resolveInfo.serviceInfo.name == PopMoveAccessibilityService::class.java.name
     }
   }
+
+  private fun diagnosticState(): JSONObject = JSONObject()
+    .put("diagnosticMode", DiagnosticStore.isEnabled(context))
+    .put("automationArmed", SafeAcceptStore.load(context).armed)
+    .put("accessibilityGranted", isAccessibilityServiceEnabled())
+    .put("accessibilityConnected", PopMoveAccessibilityService.serviceIsEnabled)
+    .put("notificationGranted", isNotificationListenerEnabled())
+    .put("notificationConnected", PopMoveNotificationListenerService.listenerIsEnabled)
 
   private fun isNotificationListenerEnabled(): Boolean {
     val enabledServices = Settings.Secure.getString(

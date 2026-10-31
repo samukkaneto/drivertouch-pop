@@ -31,6 +31,8 @@ class PopMoveNotificationListenerService : NotificationListenerService() {
     }.getOrDefault(""))
 
     val candidate = OFFER_MARKERS.any(searchable::contains)
+    DiagnosticStore.observeNotification(this, sbn, candidate)
+    if (DiagnosticStore.isEnabled(this)) return
     if (!candidate) return
 
     val stableNotificationText = searchable.replace(COUNTDOWN_PATTERN, "").trim()
@@ -48,6 +50,7 @@ class PopMoveNotificationListenerService : NotificationListenerService() {
       val openedFromNotification = runCatching {
         val pendingIntent = sbn.notification.contentIntent ?: return@runCatching false
         pendingIntent.send()
+        DiagnosticStore.command(this, "open", true)
         true
       }.getOrDefault(false)
 
@@ -55,6 +58,7 @@ class PopMoveNotificationListenerService : NotificationListenerService() {
         packageManager.getLaunchIntentForPackage(PopMoveAccessibilityService.POP_DRIVER_PACKAGE)?.let { intent ->
           intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
           startActivity(intent)
+          DiagnosticStore.command(this, "open", true)
         }
       }
       "PopDriver trazido ao primeiro plano"

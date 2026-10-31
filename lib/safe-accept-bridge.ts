@@ -1,4 +1,5 @@
 import { Platform } from "react-native";
+import type { DiagnosticSnapshot } from "@/lib/diagnostics";
 
 import SafeAcceptBridgeModule from "@/modules/safe-accept/src/SafeAcceptBridgeModule";
 import type {
@@ -8,6 +9,7 @@ import type {
 
 type NativeStatus = {
   serviceEnabled: boolean;
+  diagnosticMode: boolean;
   nativeModuleAvailable: boolean;
   armed: boolean;
   singlePaused: boolean;
@@ -56,6 +58,7 @@ export async function getNativeStatus(): Promise<NativeStatus> {
   if (!bridge) {
     return {
       serviceEnabled: false,
+      diagnosticMode: true,
       nativeModuleAvailable: false,
       armed: false,
       singlePaused: false,
@@ -72,6 +75,26 @@ export async function getNativeStatus(): Promise<NativeStatus> {
 
 export async function resumeSingleRide() {
   return bridge ? bridge.resumeSingleRide() : false;
+}
+
+export async function beginDiagnostics() {
+  return bridge ? bridge.beginDiagnostics() : false;
+}
+
+export async function endDiagnostics() {
+  return bridge ? bridge.endDiagnostics() : false;
+}
+
+export async function getDiagnostics(): Promise<DiagnosticSnapshot> {
+  if (!bridge)
+    throw new Error("O diagnóstico precisa do APK Android instalado.");
+  return JSON.parse(await bridge.getDiagnostics()) as DiagnosticSnapshot;
+}
+
+export async function recordDiagnosticObservation(
+  result: "appeared" | "not_observed",
+) {
+  return bridge ? bridge.recordDiagnosticObservation(result) : false;
 }
 
 export async function disableNativeService() {

@@ -17,7 +17,11 @@ import {
   SectionCard,
 } from "@/components/safe-accept-ui";
 import { getReadiness } from "@/lib/calibration";
-import { getNativeStatus, resumeSingleRide } from "@/lib/safe-accept-bridge";
+import {
+  endDiagnostics,
+  getNativeStatus,
+  resumeSingleRide,
+} from "@/lib/safe-accept-bridge";
 import { useSafeAccept } from "@/lib/safe-accept-context";
 
 export default function PanelScreen() {
@@ -26,6 +30,7 @@ export default function PanelScreen() {
     useSafeAccept();
   const [singlePaused, setSinglePaused] = useState(false);
   const [nativeEnabled, setNativeEnabled] = useState(false);
+  const [diagnosticMode, setDiagnosticMode] = useState(true);
   const [notificationEnabled, setNotificationEnabled] = useState(false);
   const [effectiveDuration, setEffectiveDuration] = useState(
     settings.longPressDurationMs,
@@ -42,6 +47,7 @@ export default function PanelScreen() {
             if (!mounted) return;
             setSinglePaused(status.singlePaused);
             setNativeEnabled(status.serviceEnabled);
+            setDiagnosticMode(status.diagnosticMode);
             setNotificationEnabled(status.notificationListenerEnabled);
             setEffectiveDuration(status.effectiveDurationMs);
             setLastNativeEvent(status.lastNativeEvent);
@@ -71,15 +77,17 @@ export default function PanelScreen() {
   }
 
   const paused = settings.rideMode === "single" && singlePaused;
-  const isActive = settings.isArmed && settings.mode !== "off" && !paused;
-  const statusColor =
-    readiness.tone === "active"
+  const isActive =
+    !diagnosticMode && settings.isArmed && settings.mode !== "off" && !paused;
+  const statusColor = diagnosticMode
+    ? "#B54708"
+    : readiness.tone === "active"
       ? "#12B76A"
       : readiness.tone === "ready"
         ? "#155EEF"
         : "#667085";
 
-  async function handleArmedChange(armed: boolean) {
+  async function handleArmedChange(armed: boolean, confirmed = false) {
     if (!armed) {
       disableNow();
       return;
@@ -90,6 +98,25 @@ export default function PanelScreen() {
         "Ative o serviço de acessibilidade antes de armar a automação.",
       );
       return;
+    }
+    if (diagnosticMode && !confirmed) {
+      Alert.alert(
+        "Encerrar diagnóstico e ativar a automação?",
+        "Isso volta a permitir os toques automáticos da versão anterior. Para medir somente as notificações, mantenha o diagnóstico ativo.",
+        [
+          { text: "Manter diagnóstico", style: "cancel" },
+          {
+            text: "Ativar automação",
+            onPress: () => void handleArmedChange(true, true),
+          },
+        ],
+      );
+      return;
+    }
+    if (diagnosticMode) {
+      const ended = await endDiagnostics().catch(() => false);
+      if (!ended) return;
+      setDiagnosticMode(false);
     }
     if (paused) {
       const resumed = await resumeSingleRide().catch(() => false);
@@ -126,15 +153,33 @@ export default function PanelScreen() {
         <View style={[styles.statusDot, { backgroundColor: statusColor }]} />
         <View style={styles.statusCopy}>
           <Text style={styles.statusTitle}>
-            {paused ? "Uma corrida: pausado" : readiness.label}
+            {diagnosticMode
+              ? "Diagnóstico ativo"
+              : paused
+                ? "Uma corrida: pausado"
+                : readiness.label}
           </Text>
           <Text style={styles.statusDetail}>
-            {paused
-              ? "Libere a próxima oferta quando desejar."
-              : readiness.detail}
+            {diagnosticMode
+              ? "Execução pausada para observar as notificações e o aviso do PopMove."
+              : paused
+                ? "Libere a próxima oferta quando desejar."
+                : readiness.detail}
           </Text>
         </View>
       </View>
+
+      <SectionCard title="Diagnóstico das notificações">
+        <Text style={styles.modeText}>
+          Confira se o PopMove oferece uma ação de aceite na notificação e
+          compartilhe o resultado.
+        </Text>
+        <ActionButton
+          label="Abrir diagnóstico"
+          icon="science"
+          onPress={() => router.push("/diagnostico")}
+        />
+      </SectionCard>
 
       <SectionCard title="Modo de corridas">
         <ActionButton
@@ -172,11 +217,13 @@ export default function PanelScreen() {
       <SectionCard title="Execução automática">
         <View style={styles.modeWrap}>
           <Text style={styles.modeTitle}>
-            {paused
-              ? "Pausada após uma oferta"
-              : isActive
-                ? "Ativa"
-                : "Desligada"}
+            {diagnosticMode
+              ? "Pausada para diagnóstico"
+              : paused
+                ? "Pausada após uma oferta"
+                : isActive
+                  ? "Ativa"
+                  : "Desligada"}
           </Text>
           <Text style={styles.modeText}>
             {isActive

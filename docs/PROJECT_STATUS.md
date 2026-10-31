@@ -1,6 +1,15 @@
 # Toalha Vermelha — relatório mestre do projeto
 
-Atualizado em **27/10/2026**. Este documento é a fonte principal para qualquer pessoa ou IA que precise entender e continuar o projeto sem acesso às conversas anteriores.
+Atualizado em **31/10/2026**. Este documento é a fonte principal para qualquer pessoa ou IA que precise entender e continuar o projeto sem acesso às conversas anteriores.
+
+## Atualização 0.12.0 — diagnóstico em preparação
+
+- Branch `codex/diagnostico-0.12.0`, versionCode 12, pacote `com.toalhaver.vermelha`.
+- Modo de diagnóstico nativo ativo por padrão. Configurações antigas não liberam gestos enquanto o diagnóstico estiver ativo.
+- Inspeção passiva das ações de notificações, relatório sem dados das corridas, estados de autorização/conexão e observações manuais do aviso.
+- Não executa ações de notificação nem garante indetectabilidade. Os modos anteriores podem ser reativados explicitamente no painel.
+- Revisão TypeScript/ESLint e 22 testes Vitest aprovados; build Android, testes JVM e assinatura serão verificados no workflow antes da publicação.
+- Próximo dado necessário: relatório do Moto G84 segundo [`DIAGNOSTICO.md`](DIAGNOSTICO.md).
 
 ## Atualização 0.11.0 — 27/10/2026
 

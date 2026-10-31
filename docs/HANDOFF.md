@@ -1,6 +1,14 @@
 # Continuidade do projeto
 
-> Estado atualizado em 27/10/2026. Leia primeiro [`PROJECT_STATUS.md`](PROJECT_STATUS.md), que é o relatório mestre e a fonte de verdade para retomada.
+> Estado atualizado em 31/10/2026. Leia primeiro [`PROJECT_STATUS.md`](PROJECT_STATUS.md), que é o relatório mestre e a fonte de verdade para retomada.
+
+## Atualização 0.12.0 — diagnóstico
+
+- Preparada na branch `codex/diagnostico-0.12.0`; nome e pacote preservados, versionCode 12.
+- Inicia com trava nativa de diagnóstico: observa notificações sem tocar, rolar ou abrir automaticamente o PopMove.
+- Tela **Diagnóstico** com instruções, estado real dos serviços, classificação de ações e relatório compartilhável sem conteúdo das corridas.
+- A automação anterior exige reativação explícita no painel. Não foi implementada uma nova forma de aceite nem confirmada uma solução para o alerta.
+- Procedimento e critérios: [`DIAGNOSTICO.md`](DIAGNOSTICO.md). Compilação e assinatura devem ser conferidas no workflow da pré-release `v0.12.0` antes da entrega.
 
 ## Atualização 0.11.0 — 27/10/2026
 

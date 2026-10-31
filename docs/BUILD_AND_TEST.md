@@ -1,5 +1,9 @@
 # Build e verificação
 
+## Versão 0.12.0 de diagnóstico
+
+A branch `codex/diagnostico-0.12.0` gera `Toalha-Vermelha-0.12.0-diagnostico.apk` na pré-release `v0.12.0`. O aplicativo inicia com automação pausada. Ver [`DIAGNOSTICO.md`](DIAGNOSTICO.md). A publicação mantém a transferência por cache isolado; o upload adicional como artefato é opcional e sua falha não impede a release.
+
 ## Verificações automatizadas
 
 ```bash

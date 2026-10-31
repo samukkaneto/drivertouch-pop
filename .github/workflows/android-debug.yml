@@ -5,7 +5,7 @@ on:
   push:
     branches:
       - main
-      - codex/toalha-vermelha-0.11.0
+      - codex/diagnostico-0.12.0
 
 permissions:
   contents: read
@@ -76,10 +76,19 @@ jobs:
       - name: Stage verified APK for delivery
         run: |
           mkdir apk-delivery
-          cp android/app/build/outputs/apk/release/app-release.apk apk-delivery/Toalha-Vermelha-0.11.0.apk
+          cp android/app/build/outputs/apk/release/app-release.apk apk-delivery/Toalha-Vermelha-0.12.0-diagnostico.apk
           cp apk-info.txt apk-delivery/
           cd apk-delivery
-          sha256sum Toalha-Vermelha-0.11.0.apk > apk.sha256
+          sha256sum Toalha-Vermelha-0.12.0-diagnostico.apk > apk.sha256
+
+      - name: Make APK available as a downloadable artifact
+        uses: actions/upload-artifact@v4
+        continue-on-error: true
+        with:
+          name: Toalha-Vermelha-0.12.0-diagnostico
+          path: apk-delivery/*
+          retention-days: 3
+          compression-level: 0
 
       - name: Transfer APK to isolated publisher
         uses: actions/cache/save@v4
@@ -110,10 +119,10 @@ jobs:
           GH_REPO: ${{ github.repository }}
         run: |
           sha256sum --check apk.sha256
-          if gh release view v0.11.0 >/dev/null 2>&1; then
+          if gh release view v0.12.0 >/dev/null 2>&1; then
             echo "Existing release preserved."
           else
-            gh release create v0.11.0 Toalha-Vermelha-0.11.0.apk apk-info.txt apk.sha256 \
-              --target "$GITHUB_SHA" --title "Toalha Vermelha 0.11.0" --prerelease \
-              --notes "Gesto estacionário no centro do texto de aceite detectado; sem variação aleatória de coordenadas. Mantém os modos Uma corrida e Corridas seguidas. APK Android ARM64; testes automatizados e assinatura verificados. Aceite real depende de validação no aparelho."
+            gh release create v0.12.0 Toalha-Vermelha-0.12.0-diagnostico.apk apk-info.txt apk.sha256 \
+              --target "$GITHUB_SHA" --title "Toalha Vermelha 0.12.0 — Diagnóstico" --prerelease \
+              --notes "Versão de diagnóstico. Inicia com automação pausada, inspeciona ações das notificações sem executá-las e compartilha relatório sem dados de corridas. Mantém a automação anterior sob reativação explícita. Não confirma solução para o aviso de autoclique; o próximo passo é medir no Moto G84. APK ARM64 com testes e assinatura verificados."
           fi

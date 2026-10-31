@@ -63,7 +63,7 @@ object SafeAcceptStore {
     val x = preferences.getFloat(KEY_X, -1f)
     val y = preferences.getFloat(KEY_Y, -1f)
     val storedMode = preferences.getString(KEY_MODE, "assist") ?: "assist"
-    val mode = if (storedMode == "off") "off" else "assist"
+    val mode = DiagnosticPolicy.effectiveMode(storedMode, DiagnosticStore.isEnabled(context))
     val hasCalibration = x in 0f..1f && y in 0f..1f
     val rideMode = preferences.getString(KEY_RIDE_MODE, "continuous") ?: "continuous"
     val singlePaused = rideMode == "single" && preferences.contains(KEY_SINGLE_IDENTITY)

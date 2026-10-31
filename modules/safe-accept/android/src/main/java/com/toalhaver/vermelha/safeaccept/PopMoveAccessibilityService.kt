@@ -227,6 +227,7 @@ class PopMoveAccessibilityService : AccessibilityService() {
       null
     )
 
+    DiagnosticStore.command(this, "press", accepted)
     if (accepted) SafeAcceptStore.consumeSingleRide(this, attempt.identity)
 
     if (!accepted) {
@@ -391,6 +392,7 @@ class PopMoveAccessibilityService : AccessibilityService() {
       },
       null
     )
+    DiagnosticStore.command(this, "scroll", accepted)
     if (!accepted) {
       scrollGestureInFlight = false
       offerHandler.postDelayed(
@@ -753,6 +755,15 @@ class PopMoveAccessibilityService : AccessibilityService() {
 
     fun beginOverlayCalibration(): Boolean {
       return currentInstance?.beginCalibrationOverlay() ?: false
+    }
+
+    fun prepareDiagnostics(): Boolean {
+      if (isResolvingOffer()) return false
+      currentInstance?.let {
+        it.offerHandler.removeCallbacksAndMessages(null)
+        it.removeOverlay()
+      }
+      return true
     }
 
     fun isPopDriverWindowActive(): Boolean {
