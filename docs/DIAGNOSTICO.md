@@ -8,7 +8,7 @@ O próximo teste verifica se o cartão expõe um `ACTION_LONG_CLICK` utilizável
 
 ## Instalação e teste no Moto G84 5G / Android 15
 
-1. Instalar 0.13.2 sobre a anterior. Pacote e certificado devem ser iguais; o build confere a assinatura. A atualização inicia pausada e preserva a calibração.
+1. Instalar 0.13.2 sobre a anterior. Pacote e certificado devem ser iguais; o build confere a assinatura. A atualização preserva a calibração. Confira o estado na tela antes de iniciar; o botão ativa explicitamente o teste.
 2. Com o veículo estacionado, habilitar Acessibilidade e acesso às notificações do Toalha Vermelha.
 3. Abrir **Diagnóstico** e tocar **Iniciar teste de uma oferta**. Aguardar **Teste ativo — aguardando oferta**. O botão seleciona o método, uma corrida e ativa nativamente. Se não iniciar, a tela explica o motivo.
 4. Manter o PopMove em primeiro plano e o cartão da oferta visível. Este método não rola a tela.
@@ -35,4 +35,4 @@ O modo Uma corrida pausa após processar a oferta, mesmo sem comando disponível
 
 ## Verificação da entrega
 
-TypeScript, ESLint, testes Vitest, testes JVM, build Android, identidade e assinatura são verificados antes da entrega. O teste real no PopMove depende do aparelho autenticado do proprietário.
+TypeScript, ESLint, 28 testes Vitest, testes JVM, build Android, identidade e assinatura aprovados no workflow 41220404044. O teste real no PopMove depende do aparelho autenticado do proprietário.

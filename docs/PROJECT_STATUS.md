@@ -2,6 +2,17 @@
 
 Atualizado em **31/10/2026**. Este documento é a fonte principal para qualquer pessoa ou IA que precise entender e continuar o projeto sem acesso às conversas anteriores.
 
+## Entrega verificada — 0.13.2
+
+- APK atual entregue: https://github.com/samukkaneto/drivertouch-pop/releases/download/v0.13.2/Toalha-Vermelha-0.13.2-teste-direto.apk
+- Build e publicação aprovados: https://github.com/samukkaneto/drivertouch-pop/actions/runs/41220404044
+- Commit compilado: `f4b2afbeac315d3a13e4a9d723cbb1355b6a9147`; branch `codex/teste-direto-0.13.2`.
+- Tamanho: 59.607.940 bytes. SHA-256: `08729be60bcf3cbc7b9fbdf171a307a11dd0658c12b85b70060ce3941113ba07`.
+- Pacote `com.toalhaver.vermelha`, versionName 0.13.2, versionCode 15. Assinatura v2 verificada; certificado SHA-256 `fac61745dc0903786fb9ede62a962b399f7348f0bb6f899b8332667591033b9c`, igual ao da 0.13.1. Atualização por cima compatível.
+- TypeScript, ESLint, 28 testes Vitest, testes Kotlin/JUnit e build Android aprovados.
+- Próximo passo no aparelho: Diagnóstico → **Iniciar teste de uma oferta** → aguardar **Teste ativo — aguardando oferta** → abrir PopMove com o cartão visível. Depois compartilhar relatório e resultado real. Não repetir medição ociosa como requisito.
+- A correção é do início do teste e da clareza do estado. O comando de aceite continua o da 0.13.1; ainda não foi validado em uma tentativa real no Moto G84.
+
 ## Atualização 0.13.2 — iniciar o teste diretamente
 
 - Branch `codex/teste-direto-0.13.2`; versão 0.13.2 / código 15, pacote preservado.
@@ -11,7 +22,7 @@ Atualizado em **31/10/2026**. Este documento é a fonte principal para qualquer 
 - Sincronizações nativas seguem uma fila para uma configuração antiga não desligar o teste depois da ativação. Estado visível distingue teste pausado, aguardando oferta, cartão analisado sem envio e tentativa realizada.
 - Diagnóstico v3 registra o início explícito e número de comandos desde o início do teste. O histórico anterior e as observações continuam preservados.
 - O método de aceite continua o da 0.13.1. Esta correção trata a ativação e o resultado visível; não confirma que o aviso foi resolvido.
-- TypeScript, ESLint, Vitest e build Android serão verificados antes da entrega; procedimento em [`DIAGNOSTICO.md`](DIAGNOSTICO.md).
+- Verificações aprovadas conforme entrega acima; procedimento em [`DIAGNOSTICO.md`](DIAGNOSTICO.md).
 
 ## Entrega verificada — 0.13.1
 
