@@ -32,6 +32,6 @@ O modo Uma corrida pausa após processar a oferta, mesmo sem comando disponível
 - Horários UTC. Contagens incluem atualizações da mesma oferta. Histórico antigo sobrescrito na 0.12 não pode ser reconstruído.
 - Somente metadados estruturais do pacote alvo são persistidos. Sem textos, endereços, valores, nomes de passageiros ou conteúdo de comandos.
 
-## Verificação antes da entrega
+## Verificação da entrega
 
-TypeScript, ESLint, Vitest, testes JVM, build Android, identidade e assinatura no workflow. O teste real no PopMove depende do aparelho autenticado do proprietário.
+TypeScript, ESLint, 24 testes Vitest, testes JVM, build Android, identidade e assinatura aprovados no workflow 41212017207. O teste real no PopMove depende do aparelho autenticado do proprietário.

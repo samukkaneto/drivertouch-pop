@@ -2,6 +2,17 @@
 
 Atualizado em **31/10/2026**. Este documento é a fonte principal para qualquer pessoa ou IA que precise entender e continuar o projeto sem acesso às conversas anteriores.
 
+## Entrega verificada — 0.13.1
+
+- Esta é a APK entregue nesta atualização; substitui a compilação intermediária 0.13.0.
+- Build e publicação aprovados: https://github.com/samukkaneto/drivertouch-pop/actions/runs/41212017207
+- Commit compilado: `436c4f0f138ceb51b0706b3eb2c66a3be55dd93e`; branch `codex/controle-0.13.1`.
+- APK: https://github.com/samukkaneto/drivertouch-pop/releases/download/v0.13.1/Toalha-Vermelha-0.13.1-teste-controle.apk
+- Tamanho: 59.602.216 bytes. SHA-256: `76cbe729ac8ae7c75600259a48e3fa5fd4aebc1c9749ac498714c73aa4b73154`.
+- Pacote `com.toalhaver.vermelha`, versionName 0.13.1, versionCode 14. Assinatura v2 verificada; certificado SHA-256 `fac61745dc0903786fb9ede62a962b399f7348f0bb6f899b8332667591033b9c`, igual ao da 0.12.0. Pode atualizar por cima preservando dados.
+- TypeScript, ESLint, 24 testes Vitest, testes Kotlin/JUnit e build Android aprovados. Identidade da tentativa do novo método usa a tela e ignora rótulos simples de contagem regressiva, sem depender de atualizações da notificação.
+- Pendente: testar o comando no Moto G84 autenticado. Não há confirmação de aceite nem de desaparecimento do aviso. Se o cartão não anunciar a ação utilizável, o método encerra sem gesto substituto.
+
 ## Atualização 0.13.1 — teste do comando do cartão
 
 - Branch `codex/controle-0.13.1`; versão 0.13.1 / código 14, pacote preservado.
@@ -11,7 +22,7 @@ Atualizado em **31/10/2026**. Este documento é a fonte principal para qualquer 
 - Método anterior permanece separado. Uma corrida pausa após processar a oferta; Corridas seguidas processa próximas ofertas visíveis.
 - Diagnóstico v2 guarda até 20 atualizações e copia a amostra conhecida para cada observação manual, incluindo o resultado do cartão. Não grava textos das corridas.
 - Atualização começa pausada, mesmo que a versão anterior estivesse armada. Nova escolha precisa ser ativada no painel.
-- Procedimento atual: [`DIAGNOSTICO.md`](DIAGNOSTICO.md). Build e validação física ainda pendentes nesta etapa.
+- Procedimento atual: [`DIAGNOSTICO.md`](DIAGNOSTICO.md). Build verificado acima; validação física pendente.
 
 ## Entrega verificada — 0.12.0
 
