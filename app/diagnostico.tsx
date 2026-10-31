@@ -16,6 +16,7 @@ import {
 } from "@/components/safe-accept-ui";
 import {
   actionLabels,
+  cardConclusion,
   diagnosticConclusion,
   formatDiagnosticReport,
 } from "@/lib/diagnostics";
@@ -104,30 +105,30 @@ export default function DiagnosticScreen() {
         : "Ligada; aguardando conexão";
   return (
     <ScrollView contentContainerStyle={styles.content}>
-      <Text style={styles.title}>Medir antes de mudar</Text>
+      <Text style={styles.title}>Resultado do teste</Text>
       <Text style={styles.body}>
-        O modo de diagnóstico observa notificações e pausa os toques, as
-        rolagens e a abertura automática do PopMove. As ações encontradas não
-        são executadas.
+        Confira o comando disponível no cartão, o resultado da tentativa e o
+        histórico das notificações. Abrir esta tela não apaga o relatório.
       </Text>
       {error ? <Text style={styles.error}>{error}</Text> : null}
-      <SectionCard title="Primeira medição">
+      <SectionCard title="Testar o comando do cartão">
         <Text style={styles.body}>
-          1. Com o veículo estacionado, inicie a medição abaixo.
+          1. Com o veículo estacionado, habilite a Acessibilidade e o acesso às
+          notificações.
         </Text>
         <Text style={styles.body}>
-          2. Deixe a Acessibilidade do Toalha Vermelha desligada. Habilite
-          somente o acesso às notificações.
+          2. No painel, selecione Comando do cartão e Uma corrida. Ative a
+          execução.
         </Text>
         <Text style={styles.body}>
-          3. Abra o PopMove normalmente e aguarde uma oferta. Retorne aqui,
-          registre se viu o aviso e compartilhe o relatório.
+          3. Deixe o PopMove aberto com a oferta visível. Após a tentativa,
+          volte aqui, registre se viu o aviso e compartilhe o relatório.
         </Text>
         <ActionButton
           label={
             snapshot?.startedAt
-              ? "Zerar relatório e reiniciar medição"
-              : "Iniciar medição"
+              ? "Zerar relatório e pausar execução"
+              : "Iniciar relatório com execução pausada"
           }
           icon="science"
           disabled={busy}
@@ -198,10 +199,31 @@ export default function DiagnosticScreen() {
               value={String(snapshot.offerEvents)}
             />
             <KeyValue
+              label="Método"
+              value={
+                snapshot.state.inputMethod === "control"
+                  ? "Comando do cartão"
+                  : "Toque anterior"
+              }
+            />
+            <KeyValue
+              label="Comandos do cartão solicitados"
+              value={String(snapshot.longClickCount ?? 0)}
+            />
+            <KeyValue
               label="Pressões / rolagens / aberturas solicitadas"
               value={`${snapshot.pressCount} / ${snapshot.scrollCount} / ${snapshot.openCount}`}
               last
             />
+          </SectionCard>
+          <SectionCard title="Comando do cartão">
+            <Text style={styles.body}>{cardConclusion(snapshot.lastCard)}</Text>
+            {snapshot.lastCard ? (
+              <Text style={styles.small}>
+                {new Date(snapshot.lastCard.at).toLocaleString("pt-BR")} ·
+                controles elegíveis: {snapshot.lastCard.eligibleNodes}
+              </Text>
+            ) : null}
           </SectionCard>
           <SectionCard title="Ações da notificação">
             <Text style={styles.body}>{diagnosticConclusion(snapshot)}</Text>
@@ -234,8 +256,9 @@ export default function DiagnosticScreen() {
           <SectionCard title="Registrar o que você viu">
             <Text style={styles.body}>
               Ao voltar do PopMove, marque o resultado. O relatório guardará sua
-              observação com o estado atual das permissões. Esta tela não
-              detecta o balão automaticamente.
+              observação com o estado atual e a última oferta já registrada
+              naquele momento. Atualizações posteriores não substituem essa
+              amostra. Esta tela não detecta o balão automaticamente.
             </Text>
             <ActionButton
               label="Vi o aviso de autoclique"
@@ -297,10 +320,8 @@ export default function DiagnosticScreen() {
             ) : null}
           </SectionCard>
           <Text style={styles.small}>
-            A comparação seguinte pode ser feita com Acessibilidade ligada e o
-            diagnóstico ainda ativo. Registre outro resultado sem zerar o
-            relatório. Para voltar à automação anterior, ative a execução
-            explicitamente no painel.
+            Se o cartão não oferecer o comando, o teste termina sem um toque
+            substituto. O resultado será registrado aqui.
           </Text>
         </>
       ) : (

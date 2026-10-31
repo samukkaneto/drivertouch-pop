@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  cardConclusion,
   diagnosticConclusion,
   formatDiagnosticReport,
 } from "../lib/diagnostics";
@@ -106,5 +107,68 @@ describe("diagnostic evidence", () => {
     expect(report).toContain("notificações autorizadas/conectadas: sim/não");
     expect(report).toContain("não observou aviso");
     expect(report).toContain("não comprova indetectabilidade");
+    expect(report).toContain(
+      "não permite concluir se a observação ocorreu antes da oferta",
+    );
+  });
+
+  it("keeps the offer at observation distinct from a later notification update", () => {
+    const first = {
+      ...offer,
+      sequence: 1,
+      at: Date.parse("2026-10-31T14:23:20.000Z"),
+    };
+    const updated = {
+      ...offer,
+      sequence: 2,
+      at: Date.parse("2026-10-31T14:23:53.959Z"),
+    };
+    const report = formatDiagnosticReport({
+      ...snapshot,
+      schema: 2,
+      lastOffer: updated,
+      notificationHistory: [updated, first],
+      observations: [
+        {
+          at: Date.parse("2026-10-31T14:23:36.274Z"),
+          result: "not_observed",
+          state: snapshot.state,
+          offerAtObservation: first,
+          notificationEventsAtObservation: 1,
+        },
+      ],
+    });
+    expect(report).toContain(
+      "Última oferta: 2026-10-31T14:23:53.959Z; amostra: 2",
+    );
+    expect(report).toContain(
+      "Oferta já registrada ao marcar a observação: 2026-10-31T14:23:20.000Z; amostra: 1",
+    );
+    expect(report).not.toContain("Versão anterior: não guardou");
+  });
+
+  it("does not equate an Android control response with accepted ride or no warning", () => {
+    const card = {
+      at: 1,
+      reason: "available",
+      markerNodes: 1,
+      longClickNodes: 1,
+      pressAndHoldNodes: 0,
+      eligibleNodes: 1,
+      available: true,
+      performed: true,
+    };
+    expect(cardConclusion(card)).toContain("não confirma aceite");
+    expect(cardConclusion({ ...card, performed: false })).toContain(
+      "Nenhum toque substituto",
+    );
+    expect(
+      cardConclusion({
+        ...card,
+        reason: "no_eligible_long_click",
+        available: false,
+        performed: undefined,
+      }),
+    ).toContain("não ofereceu um comando");
   });
 });

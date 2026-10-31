@@ -10,6 +10,7 @@ import type {
 type NativeStatus = {
   serviceEnabled: boolean;
   diagnosticMode: boolean;
+  inputMethod: "control" | "gesture";
   nativeModuleAvailable: boolean;
   armed: boolean;
   singlePaused: boolean;
@@ -59,6 +60,7 @@ export async function getNativeStatus(): Promise<NativeStatus> {
     return {
       serviceEnabled: false,
       diagnosticMode: true,
+      inputMethod: "control",
       nativeModuleAvailable: false,
       armed: false,
       singlePaused: false,
@@ -83,6 +85,10 @@ export async function beginDiagnostics() {
 
 export async function endDiagnostics() {
   return bridge ? bridge.endDiagnostics() : false;
+}
+
+export async function setNativeInputMethod(method: "control" | "gesture") {
+  return bridge ? bridge.setInputMethod(method) : false;
 }
 
 export async function getDiagnostics(): Promise<DiagnosticSnapshot> {

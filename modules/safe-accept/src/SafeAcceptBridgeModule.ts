@@ -3,6 +3,7 @@ import { NativeModule, requireOptionalNativeModule } from "expo";
 export type NativeServiceStatus = {
   serviceEnabled: boolean;
   diagnosticMode: boolean;
+  inputMethod: "control" | "gesture";
   armed: boolean;
   singlePaused: boolean;
   lastNativeEvent: string | null;
@@ -44,6 +45,7 @@ declare class SafeAcceptBridgeModule extends NativeModule {
   disableNow(): Promise<boolean>;
   beginDiagnostics(): Promise<boolean>;
   endDiagnostics(): Promise<boolean>;
+  setInputMethod(method: "control" | "gesture"): Promise<boolean>;
   getDiagnostics(): Promise<string>;
   recordDiagnosticObservation(
     result: "appeared" | "not_observed",

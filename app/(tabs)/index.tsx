@@ -21,6 +21,7 @@ import {
   endDiagnostics,
   getNativeStatus,
   resumeSingleRide,
+  setNativeInputMethod,
 } from "@/lib/safe-accept-bridge";
 import { useSafeAccept } from "@/lib/safe-accept-context";
 
@@ -31,6 +32,10 @@ export default function PanelScreen() {
   const [singlePaused, setSinglePaused] = useState(false);
   const [nativeEnabled, setNativeEnabled] = useState(false);
   const [diagnosticMode, setDiagnosticMode] = useState(true);
+  const [inputMethod, setInputMethod] = useState<"control" | "gesture">(
+    "control",
+  );
+  const [changingMethod, setChangingMethod] = useState(false);
   const [notificationEnabled, setNotificationEnabled] = useState(false);
   const [effectiveDuration, setEffectiveDuration] = useState(
     settings.longPressDurationMs,
@@ -48,6 +53,7 @@ export default function PanelScreen() {
             setSinglePaused(status.singlePaused);
             setNativeEnabled(status.serviceEnabled);
             setDiagnosticMode(status.diagnosticMode);
+            setInputMethod(status.inputMethod);
             setNotificationEnabled(status.notificationListenerEnabled);
             setEffectiveDuration(status.effectiveDurationMs);
             setLastNativeEvent(status.lastNativeEvent);
@@ -87,6 +93,25 @@ export default function PanelScreen() {
         ? "#155EEF"
         : "#667085";
 
+  async function changeMethod(method: "control" | "gesture") {
+    setChangingMethod(true);
+    try {
+      await disableNow();
+      if (!(await setNativeInputMethod(method))) {
+        Alert.alert(
+          "Aguarde a tentativa atual",
+          "Tente mudar o método novamente após a execução terminar.",
+        );
+        return;
+      }
+      setInputMethod(method);
+    } catch {
+      Alert.alert("Método não alterado", "Tente novamente.");
+    } finally {
+      setChangingMethod(false);
+    }
+  }
+
   async function handleArmedChange(armed: boolean, confirmed = false) {
     if (!armed) {
       disableNow();
@@ -102,7 +127,9 @@ export default function PanelScreen() {
     if (diagnosticMode && !confirmed) {
       Alert.alert(
         "Encerrar diagnóstico e ativar a automação?",
-        "Isso volta a permitir os toques automáticos da versão anterior. Para medir somente as notificações, mantenha o diagnóstico ativo.",
+        inputMethod === "control"
+          ? "O teste tentará o comando de pressionamento longo oferecido pelo cartão visível. Se não houver esse comando, encerrará a tentativa. Ainda precisa ser validado no PopMove."
+          : "Isso volta a permitir os toques automáticos da versão anterior.",
         [
           { text: "Manter diagnóstico", style: "cancel" },
           {
@@ -144,8 +171,8 @@ export default function PanelScreen() {
         </View>
         <Text style={styles.title}>Toalha Vermelha</Text>
         <Text style={styles.subtitle}>
-          Reconhece novas viagens do Pop Driver e segura automaticamente o
-          cartão da corrida.
+          Reconhece novas viagens do PopMove e executa o método de aceite
+          selecionado.
         </Text>
       </View>
 
@@ -169,10 +196,32 @@ export default function PanelScreen() {
         </View>
       </View>
 
-      <SectionCard title="Diagnóstico das notificações">
+      <SectionCard title="Método de aceite">
+        <ActionButton
+          label={`${inputMethod === "control" ? "✓ " : ""}Comando do cartão · teste`}
+          icon="science"
+          variant={inputMethod === "control" ? "primary" : "secondary"}
+          disabled={changingMethod}
+          onPress={() => void changeMethod("control")}
+        />
+        <ActionButton
+          label={`${inputMethod === "gesture" ? "✓ " : ""}Toque anterior`}
+          icon="touch-app"
+          variant={inputMethod === "gesture" ? "primary" : "secondary"}
+          disabled={changingMethod}
+          onPress={() => void changeMethod("gesture")}
+        />
         <Text style={styles.modeText}>
-          Confira se o PopMove oferece uma ação de aceite na notificação e
-          compartilhe o resultado.
+          {inputMethod === "control"
+            ? "Teste: usa o pressionamento longo oferecido pelo cartão. Mantenha a oferta visível no PopMove. Se o comando não existir, registra o motivo e encerra; este método não rola a tela."
+            : "Usa o toque prolongado da versão anterior e a rolagem para procurar a oferta."}
+        </Text>
+      </SectionCard>
+
+      <SectionCard title="Resultado do teste">
+        <Text style={styles.modeText}>
+          Após a tentativa, registre se o aviso apareceu e compartilhe o
+          relatório.
         </Text>
         <ActionButton
           label="Abrir diagnóstico"
@@ -202,8 +251,10 @@ export default function PanelScreen() {
         />
         <Text style={styles.modeText}>
           {settings.rideMode === "single"
-            ? "Tenta aceitar uma oferta e pausa. Libere a próxima pelo painel; reabrir o app não remove a pausa."
-            : "Continua procurando ofertas, inclusive durante uma corrida em andamento."}
+            ? "Processa uma oferta e pausa, mesmo se o comando estiver indisponível. Libere a próxima pelo painel."
+            : inputMethod === "control"
+              ? "Processa novas ofertas que estejam visíveis, inclusive durante uma corrida em andamento."
+              : "Continua procurando ofertas, inclusive durante uma corrida em andamento."}
         </Text>
         {paused ? (
           <ActionButton
@@ -227,7 +278,9 @@ export default function PanelScreen() {
           </Text>
           <Text style={styles.modeText}>
             {isActive
-              ? "Reconhecimento imediato, rolagem de fila e toque prolongado adaptativo."
+              ? inputMethod === "control"
+                ? "Aguardando um cartão visível com comando disponível."
+                : "Reconhecimento imediato, rolagem de fila e toque prolongado adaptativo."
               : "Nenhuma corrida será aceita automaticamente."}
           </Text>
         </View>
@@ -249,7 +302,7 @@ export default function PanelScreen() {
           <Switch
             value={isActive}
             onValueChange={handleArmedChange}
-            disabled={!settings.calibration || !nativeEnabled}
+            disabled={!settings.calibration || !nativeEnabled || changingMethod}
             trackColor={{ false: "#D0D5DD", true: "#84ADFF" }}
             thumbColor={isActive ? "#155EEF" : "#FFFFFF"}
           />
@@ -270,8 +323,16 @@ export default function PanelScreen() {
           value={notificationEnabled ? "Habilitadas" : "Aguardando ativação"}
         />
         <KeyValue
-          label="Melhor duração protegida"
-          value={`${effectiveDuration} ms`}
+          label={
+            inputMethod === "control"
+              ? "Método selecionado"
+              : "Melhor duração protegida"
+          }
+          value={
+            inputMethod === "control"
+              ? "Comando do cartão · teste"
+              : `${effectiveDuration} ms`
+          }
         />
         <KeyValue
           label="Último evento nativo"
@@ -305,10 +366,9 @@ export default function PanelScreen() {
       <View style={styles.note}>
         <MaterialIcons color="#475467" name="info-outline" size={18} />
         <Text style={styles.noteText}>
-          A oferta é confirmada pelo texto “PRESSIONE E SEGURE PARA ATENDER”.
-          Quando outra corrida chega durante uma viagem, o serviço rola até o
-          cartão aparecer; se o POP driver já está aberto, não tenta abri-lo de
-          novo.
+          A oferta é confirmada pelo texto “PRESSIONE E SEGURE PARA ATENDER”. O
+          teste do comando ainda precisa de confirmação no aparelho. Uma
+          resposta do Android não confirma que a corrida foi aceita.
         </Text>
       </View>
     </ScrollView>

@@ -16,7 +16,8 @@ data class SafeAcceptConfig(
   val acceptMarker: String,
   val rideMode: String,
   val touchRadius: Float,
-  val singlePaused: Boolean
+  val singlePaused: Boolean,
+  val inputMethod: String
 )
 
 data class GestureLearningResult(
@@ -83,7 +84,8 @@ object SafeAcceptStore {
         ?: "pressione e segure para atender",
       rideMode = rideMode,
       touchRadius = preferences.getFloat(KEY_TOUCH_RADIUS, 0.04f).coerceIn(0.01f, 0.12f),
-      singlePaused = singlePaused
+      singlePaused = singlePaused,
+      inputMethod = preferences.getString("input_method", "control") ?: "control"
     )
   }
 
@@ -92,6 +94,13 @@ object SafeAcceptStore {
       .putString(KEY_RIDE_MODE, if (rideMode == "single") "single" else "continuous")
       .putFloat(KEY_TOUCH_RADIUS, (if (radius.isFinite()) radius else 0.04).coerceIn(0.01, 0.12).toFloat())
       .apply()
+  }
+
+  fun setInputMethod(context: Context, method: String) {
+    require(method in listOf("control", "gesture"))
+    disable(context)
+    context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+      .putString("input_method", method).commit()
   }
 
   fun canDispatch(context: Context, identity: String, retry: Boolean): Boolean {
@@ -106,7 +115,7 @@ object SafeAcceptStore {
     if (load(context).rideMode != "single" || load(context).singlePaused) return
     context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
       .putString(KEY_SINGLE_IDENTITY, identity).commit()
-    record(context, "system", "Uma corrida: tentativa enviada; pausa até liberar a próxima no painel")
+    record(context, "system", "Uma corrida: oferta processada; pausa até liberar a próxima no painel")
   }
 
   fun resumeSingleRide(context: Context) {

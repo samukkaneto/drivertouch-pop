@@ -2,6 +2,17 @@
 
 Atualizado em **31/10/2026**. Este documento é a fonte principal para qualquer pessoa ou IA que precise entender e continuar o projeto sem acesso às conversas anteriores.
 
+## Atualização 0.13.0 — teste do comando do cartão
+
+- Branch `codex/controle-0.13.0`; versão 0.13.0 / código 13, pacote preservado.
+- O proprietário confirmou que o aviso surge na tentativa de toque. Não repetir a comparação de serviço ocioso como requisito para avançar.
+- 0.12 registrou duas notificações, última sem ações de aceite. A observação manual pode ser posterior à primeira oferta e anterior a uma atualização. O relatório antigo não preservava essa relação; não concluir que o usuário marcou antes de receber a oferta.
+- Novo método experimental invoca somente `ACTION_LONG_CLICK` anunciado pelo cartão visível e habilitado com a frase exata. Seleção ambígua, árvore incompleta ou comando ausente encerram a tentativa. Sem gesto substituto, repetição ou rolagem nesse método.
+- Método anterior permanece separado. Uma corrida pausa após processar a oferta; Corridas seguidas processa próximas ofertas visíveis.
+- Diagnóstico v2 guarda até 20 atualizações e copia a amostra conhecida para cada observação manual, incluindo o resultado do cartão. Não grava textos das corridas.
+- Atualização começa pausada, mesmo que a versão anterior estivesse armada. Nova escolha precisa ser ativada no painel.
+- Procedimento atual: [`DIAGNOSTICO.md`](DIAGNOSTICO.md). Build e validação física ainda pendentes nesta etapa.
+
 ## Entrega verificada — 0.12.0
 
 - Build e publicação aprovados: https://github.com/samukkaneto/drivertouch-pop/actions/runs/41164428370
@@ -10,7 +21,7 @@ Atualizado em **31/10/2026**. Este documento é a fonte principal para qualquer 
 - Tamanho: 59.595.260 bytes. SHA-256: `b8a9a0330478c548e7c4fa633f3e4284d99bb728d4b552bcbb694a0bb3efba5d`.
 - Identidade verificada: `com.toalhaver.vermelha`, versionName 0.12.0, versionCode 12; certificado SHA-256 `fac61745dc0903786fb9ede62a962b399f7348f0bb6f899b8332667591033b9c`, igual ao da 0.11.0.
 - TypeScript, lint, 22 testes Vitest, testes Kotlin/JUnit, build Android e assinatura aprovados.
-- Pendente: medição no Moto G84. Esta entrega é diagnóstica e não confirma que o aviso de autoclique foi resolvido.
+- Medição recebida: última oferta sem ações de notificação. Aviso associado ao toque segundo relato do proprietário; seguir o teste 0.13.0.
 
 ## Atualização 0.12.0 — diagnóstico
 

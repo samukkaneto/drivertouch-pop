@@ -10,18 +10,20 @@ import org.json.JSONObject
 object DiagnosticStore {
   private const val PREFS = "toalha_vermelha_diagnostics"
   private const val TARGET = "br.com.popmove.driver"
+  // A new experimental method must start paused even when upgrading an armed installation.
+  private const val ENABLED = "enabled_v2"
   private fun prefs(context: Context) = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 
-  fun isEnabled(context: Context): Boolean = prefs(context).getBoolean("enabled", true)
+  fun isEnabled(context: Context): Boolean = prefs(context).getBoolean(ENABLED, true)
 
   @Synchronized
   fun begin(context: Context) {
-    prefs(context).edit().clear().putBoolean("enabled", true)
+    prefs(context).edit().clear().putBoolean(ENABLED, true)
       .putLong("startedAt", System.currentTimeMillis()).commit()
   }
 
   fun end(context: Context) {
-    prefs(context).edit().putBoolean("enabled", false).commit()
+    prefs(context).edit().putBoolean(ENABLED, false).commit()
   }
 
   @Synchronized
@@ -40,7 +42,10 @@ object DiagnosticStore {
         .put("remoteInputCount", action.remoteInputs?.size ?: 0))
     }
     val now = System.currentTimeMillis()
+    val p = prefs(context)
+    val sequence = p.getInt("notificationEvents", 0) + 1
     val sample = JSONObject()
+      .put("sequence", sequence)
       .put("at", now)
       .put("postedAt", sbn.postTime)
       .put("offerRecognized", offerRecognized)
@@ -48,10 +53,11 @@ object DiagnosticStore {
       .put("hasOpenIntent", sbn.notification.contentIntent != null)
       .put("actionCount", actions.size)
       .put("actions", summaries)
-    val p = prefs(context)
+    val history = prepend(sample, readArray(p.getString("notificationHistory", null)))
     val editor = p.edit()
       .putLong("startedAt", p.getLong("startedAt", now))
-      .putInt("notificationEvents", p.getInt("notificationEvents", 0) + 1)
+      .putInt("notificationEvents", sequence)
+      .putString("notificationHistory", history.toString())
       .putString("lastNotification", sample.toString())
     if (offerRecognized) {
       editor.putInt("offerEvents", p.getInt("offerEvents", 0) + 1)
@@ -62,7 +68,7 @@ object DiagnosticStore {
 
   @Synchronized
   fun command(context: Context, kind: String, dispatched: Boolean) {
-    if (kind !in listOf("press", "scroll", "open")) return
+    if (kind !in listOf("press", "scroll", "open", "longClick")) return
     val p = prefs(context)
     val events = JSONArray().put(JSONObject().put("at", System.currentTimeMillis())
       .put("kind", kind).put("dispatched", dispatched))
@@ -73,11 +79,20 @@ object DiagnosticStore {
   }
 
   @Synchronized
+  fun card(context: Context, metadata: JSONObject) {
+    prefs(context).edit().putString("lastCard", metadata.toString()).apply()
+  }
+
+  @Synchronized
   fun observation(context: Context, result: String, state: JSONObject) {
     require(result in listOf("appeared", "not_observed"))
     val p = prefs(context)
     val item = JSONObject().put("at", System.currentTimeMillis())
       .put("result", result).put("state", state)
+      // Freeze the sample known now; future notification updates must not change this link.
+      .put("offerAtObservation", readObject(p.getString("lastOffer", null)))
+      .put("cardAtObservation", readObject(p.getString("lastCard", null)))
+      .put("notificationEventsAtObservation", p.getInt("notificationEvents", 0))
     val events = JSONArray().put(item)
     val previous = readArray(p.getString("observations", null))
     for (i in 0 until minOf(previous.length(), 19)) events.put(previous.getJSONObject(i))
@@ -88,7 +103,7 @@ object DiagnosticStore {
   fun snapshot(context: Context, state: JSONObject): String {
     val p = prefs(context)
     return JSONObject()
-      .put("schema", 1)
+      .put("schema", 2)
       .put("appVersion", packageVersion(context, context.packageName))
       .put("popMoveVersion", packageVersion(context, TARGET))
       .put("device", "${Build.MANUFACTURER} ${Build.MODEL}")
@@ -101,7 +116,10 @@ object DiagnosticStore {
       .put("offerEvents", p.getInt("offerEvents", 0))
       .put("lastNotification", readObject(p.getString("lastNotification", null)))
       .put("lastOffer", readObject(p.getString("lastOffer", null)))
+      .put("notificationHistory", readArray(p.getString("notificationHistory", null)))
+      .put("lastCard", readObject(p.getString("lastCard", null)))
       .put("pressCount", p.getInt("pressCount", 0))
+      .put("longClickCount", p.getInt("longClickCount", 0))
       .put("scrollCount", p.getInt("scrollCount", 0))
       .put("openCount", p.getInt("openCount", 0))
       .put("commands", readArray(p.getString("commands", null)))
@@ -119,4 +137,10 @@ object DiagnosticStore {
 
   private fun readArray(value: String?): JSONArray =
     runCatching { JSONArray(value ?: "[]") }.getOrDefault(JSONArray())
+
+  private fun prepend(item: JSONObject, previous: JSONArray): JSONArray {
+    val events = JSONArray().put(item)
+    for (i in 0 until minOf(previous.length(), 19)) events.put(previous.getJSONObject(i))
+    return events
+  }
 }

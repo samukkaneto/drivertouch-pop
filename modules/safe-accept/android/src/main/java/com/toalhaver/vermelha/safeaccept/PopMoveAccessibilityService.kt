@@ -110,7 +110,7 @@ class PopMoveAccessibilityService : AccessibilityService() {
     val notificationFingerprint = SafeAcceptStore.currentOfferNotificationFingerprint(this)
     if (!snapshot.markerVisible) {
       root.recycle()
-      if (allowScroll && notificationFingerprint != null) {
+      if (config.inputMethod == "gesture" && allowScroll && notificationFingerprint != null) {
         attemptOfferScroll(notificationFingerprint, snapshot.safeBounds)
       }
       return
@@ -132,7 +132,7 @@ class PopMoveAccessibilityService : AccessibilityService() {
     val x = snapshot.markerCenterX ?: return
     val y = snapshot.markerCenterY ?: return
     if (!containsPoint(snapshot.safeBounds, x, y)) {
-      if (allowScroll && notificationFingerprint != null) {
+      if (config.inputMethod == "gesture" && allowScroll && notificationFingerprint != null) {
         attemptOfferScroll(notificationFingerprint, snapshot.safeBounds)
       }
       return
@@ -141,7 +141,8 @@ class PopMoveAccessibilityService : AccessibilityService() {
     SafeAcceptStore.record(
       this,
       "gesture",
-      "Frase real visível; toque longo confinado ao cartão da nova viagem"
+      if (config.inputMethod == "control") "Frase real visível; verificando comando disponível no cartão"
+      else "Frase real visível; toque longo confinado ao cartão da nova viagem"
     )
     dispatchLongPress(
       config,
@@ -163,6 +164,10 @@ class PopMoveAccessibilityService : AccessibilityService() {
       return
     }
     val currentConfig = SafeAcceptStore.load(this)
+    if (currentConfig.inputMethod == "control") {
+      dispatchControlLongClick(attempt)
+      return
+    }
     val safeAttempt = resolveVisibleMarkerAttempt(attempt)
     if (safeAttempt == null) {
       offerResolutionInProgress = false
@@ -312,6 +317,41 @@ class PopMoveAccessibilityService : AccessibilityService() {
     )
   }
 
+  private fun dispatchControlLongClick(attempt: GestureAttempt) {
+    val root = rootInActiveWindow ?: return
+    if (root.packageName?.toString() != POP_DRIVER_PACKAGE) { root.recycle(); return }
+    val scan = try { ControlTargetScanner.inspect(root, calculateSafeBounds(root)) } finally { root.recycle() }
+    DiagnosticStore.card(this, scan.metadata)
+    val target = scan.target
+    if (target == null) {
+      SafeAcceptStore.consumeSingleRide(this, attempt.identity)
+      SafeAcceptStore.record(this, "system", "Comando do cartão indisponível: ${scan.metadata.optString("reason")}. Nenhum toque substituto enviado.")
+      return
+    }
+    offerResolutionInProgress = true
+    try {
+      val config = SafeAcceptStore.load(this)
+      if (config.inputMethod != "control" || !SafeAcceptStore.canDispatch(this, attempt.identity, false) ||
+          !isTargetWindowActive() || !target.refresh() || !target.isEnabled || !target.isVisibleToUser ||
+          !target.isLongClickable || target.actionList.none { it.id == AccessibilityNodeInfo.ACTION_LONG_CLICK }) {
+        DiagnosticStore.card(this, scan.metadata.put("reason", "changed_before_action").put("available", false))
+        return
+      }
+      // Only invoke the action advertised by the visible card. No coordinate gesture or retry fallback.
+      val result = runCatching { target.performAction(AccessibilityNodeInfo.ACTION_LONG_CLICK) }.getOrDefault(false)
+      DiagnosticStore.command(this, "longClick", result)
+      DiagnosticStore.card(this, scan.metadata.put("at", System.currentTimeMillis()).put("performed", result))
+      SafeAcceptStore.consumeSingleRide(this, attempt.identity)
+      completeOfferSession(attempt.identity)
+      SafeAcceptStore.record(this, "system", if (result)
+        "O controle respondeu ao pressionamento longo; confirme no PopMove se a corrida foi aceita."
+        else "O controle recusou o pressionamento longo; nenhum toque substituto enviado.")
+    } finally {
+      target.recycle()
+      offerResolutionInProgress = false
+    }
+  }
+
   private fun attemptOfferScroll(fingerprint: String, safeBounds: Rect) {
     if (scrollOfferFingerprint != fingerprint) {
       scrollOfferFingerprint = fingerprint
@@ -340,6 +380,7 @@ class PopMoveAccessibilityService : AccessibilityService() {
   }
 
   private fun dispatchVerticalScrollGesture(safeBounds: Rect) {
+    if (SafeAcceptStore.load(this).inputMethod != "gesture") return
     if (overlayView != null || !SafeAcceptStore.load(this).armed || !isTargetWindowActive()) return
     if (safeBounds.width() < dp(MIN_SAFE_WIDTH_DP) || safeBounds.height() < dp(MIN_SAFE_HEIGHT_DP)) {
       SafeAcceptStore.record(

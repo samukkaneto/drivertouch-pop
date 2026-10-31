@@ -72,6 +72,7 @@ class SafeAcceptBridgeModule : Module() {
       mapOf(
         "serviceEnabled" to isAccessibilityServiceEnabled(),
         "diagnosticMode" to DiagnosticStore.isEnabled(context),
+        "inputMethod" to config.inputMethod,
         "notificationListenerEnabled" to isNotificationListenerEnabled(),
         "recentOfferNotification" to SafeAcceptStore.recentOfferNotification(context),
         "armed" to config.armed,
@@ -102,6 +103,13 @@ class SafeAcceptBridgeModule : Module() {
 
     AsyncFunction("getDiagnostics") {
       DiagnosticStore.snapshot(context, diagnosticState())
+    }.runOnQueue(Queues.MAIN)
+
+    AsyncFunction("setInputMethod") { method: String ->
+      if (PopMoveAccessibilityService.isResolvingOffer()) false else {
+        SafeAcceptStore.setInputMethod(context, method)
+        true
+      }
     }.runOnQueue(Queues.MAIN)
 
     AsyncFunction("recordDiagnosticObservation") { result: String ->
@@ -139,6 +147,7 @@ class SafeAcceptBridgeModule : Module() {
   private fun diagnosticState(): JSONObject = JSONObject()
     .put("diagnosticMode", DiagnosticStore.isEnabled(context))
     .put("automationArmed", SafeAcceptStore.load(context).armed)
+    .put("inputMethod", SafeAcceptStore.load(context).inputMethod)
     .put("accessibilityGranted", isAccessibilityServiceEnabled())
     .put("accessibilityConnected", PopMoveAccessibilityService.serviceIsEnabled)
     .put("notificationGranted", isNotificationListenerEnabled())

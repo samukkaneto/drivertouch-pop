@@ -1,39 +1,37 @@
-# Toalha Vermelha 0.12.0 — diagnóstico
+# Toalha Vermelha 0.13.0 — teste do comando do cartão
 
-## Objetivo
+## Evidência e objetivo
 
-Verificar se uma oferta do PopMove publica uma ação de aceite na notificação e registrar em quais estados o proprietário observa o aviso de autoclique. O diagnóstico não executa ações da notificação, não altera o PopMove e não comprova indetectabilidade.
+O proprietário relata que o balão de autoclique aparece na tentativa de toque. Não é necessário repetir a comparação com Acessibilidade ociosa. A amostra da 0.12.0 não ofereceu ações na notificação.
 
-## Funcionamento
+O próximo teste verifica se o cartão expõe um `ACTION_LONG_CLICK` utilizável. Essa é uma ação documentada do Android; não esconde a Acessibilidade nem garante ausência do aviso. Pode estar ausente ou não efetivar o aceite. O retorno de `performAction` não confirma aceite pelo servidor.
 
-- Inicia em diagnóstico na primeira instalação/atualização para 0.12.0. A trava nativa prevalece sobre configurações antigas e sobre a sincronização da interface: nenhuma pressão, rolagem ou abertura automática é realizada enquanto ela está ativa.
-- Acessibilidade não é necessária para inspecionar notificações. O usuário concede o acesso às notificações na tela oficial do Android.
-- Registra separadamente autorização e conexão dos dois serviços, versões, modelo/Android, eventos de notificação, estrutura das ações, comandos enviados e observações manuais do proprietário.
-- Somente o pacote `br.com.popmove.driver` é observado. Textos, endereços, valores, nomes e conteúdo de PendingIntent não são persistidos nem compartilhados. Rótulos das ações são classificados por uma lista fixa; rótulos desconhecidos são descartados.
-- Até 12 ações por amostra são inspecionadas; o total original é informado. A última oferta reconhecida e a última notificação são mantidas separadamente. As contagens incluem atualizações da mesma oferta.
-- Um rótulo de aceite com comando do PopMove é somente uma candidata; nenhuma ação é acionada para testar.
-- A permissão continua visível no Android. O diagnóstico não tenta esconder o aplicativo nem interceptar o mecanismo de detecção do PopMove.
-- A automação anterior e os modos Uma corrida/Corridas seguidas continuam no painel. Reativar exige uma escolha explícita que encerra o diagnóstico. A calibração manual continua disponível.
+## Instalação e teste no Moto G84 5G / Android 15
 
-## Primeira medição no Moto G84 5G
+1. Instalar 0.13.0 sobre a anterior. Pacote e certificado devem ser iguais; o build confere a assinatura. A atualização inicia pausada e preserva a calibração.
+2. Com o veículo estacionado, habilitar Acessibilidade e acesso às notificações do Toalha Vermelha.
+3. No painel, selecionar **Comando do cartão · teste** e **Uma corrida**, ativar a execução e confirmar.
+4. Manter o PopMove em primeiro plano e o cartão da oferta visível. Este método não rola a tela.
+5. Após a tentativa, conferir no PopMove se aceitou e se mostrou o aviso. Abrir **Diagnóstico**, marcar a observação e compartilhar o relatório. Não zerar antes de compartilhar.
 
-1. Instalar a APK 0.12.0 sobre a anterior. Abrir **Diagnóstico** no painel e tocar em **Iniciar medição**.
-2. Com o veículo estacionado, desabilitar a Acessibilidade do Toalha Vermelha e habilitar somente seu acesso às notificações.
-3. Abrir o PopMove manualmente e aguardar uma oferta real. A APK de diagnóstico não a aceitará.
-4. Voltar ao diagnóstico. Marcar **Vi o aviso de autoclique** ou **Não observei o aviso**, conforme ocorrido.
-5. Usar **Compartilhar relatório** ou **Mostrar texto para copiar**. O relatório usa horários UTC e identifica as observações como relatos do usuário, com as permissões no instante do registro.
+O modo Uma corrida pausa após processar a oferta, mesmo sem comando disponível. Liberar outra tentativa explicitamente no painel. Corridas seguidas permanece disponível para novas ofertas visíveis. O modo **Toque anterior** mantém a execução antiga, separada do teste.
 
-A comparação seguinte pode repetir o fluxo com Acessibilidade ligada e diagnóstico ainda ativo. Não zerar o relatório entre essas observações. Se necessário, testar primeiro com ambos os acessos desligados para obter uma referência. Avisos armazenados pelo PopMove e outros serviços do aparelho podem confundir a comparação; ausência de aviso não comprova que não houve detecção.
+## Critérios do novo método
 
-## Critérios de decisão
+- Pacote correto, frase exata, controle visível/habilitado, área dentro dos limites seguros, `isLongClickable` e ação anunciada.
+- Seleciona o controle elegível menor entre controles aninhados; rejeita cartões distintos ou leitura incompleta (limites de 600 nós/40 níveis).
+- Executa uma única ação anunciada. Nenhum gesto de coordenada, repetição ou rolagem é usado como alternativa.
+- Registra contagens de nós com ação de pressionamento longo e com `ACTION_PRESS_AND_HOLD`. Esta última é apenas inspecionada, não executada.
+- Sem comando: caminho indisponível nessa amostra. Comando recusado: não confirmou resposta. Comando respondido: exige observar aceite real e aviso no aparelho.
 
-- Sem oferta recebida: ainda não há evidência sobre ações de aceite.
-- Oferta recebida sem ações: essa amostra não fornece aceite via `Notification.actions`.
-- Ações desconhecidas: inconclusivo; não afirmar que não existe outro caminho.
-- Candidata de aceite: preparar um teste específico posterior; não executar automaticamente nesta versão.
+## Correção dos horários — diagnóstico v2
 
-## Verificação
+- Até 20 atualizações de notificações são preservadas com número sequencial, horário de recebimento e publicação.
+- Cada observação manual copia a última oferta e o resultado do cartão já conhecidos. Atualizações futuras não mudam esse vínculo. Não é uma identificação automática de qual oferta o usuário viu.
+- Observações antigas não tinham esse vínculo. O relatório informa essa limitação, sem concluir que a marcação aconteceu antes de o usuário receber uma oferta.
+- Horários UTC. Contagens incluem atualizações da mesma oferta. Histórico antigo sobrescrito na 0.12 não pode ser reconstruído.
+- Somente metadados estruturais do pacote alvo são persistidos. Sem textos, endereços, valores, nomes de passageiros ou conteúdo de comandos.
 
-- TypeScript, ESLint e 22 testes Vitest aprovados localmente.
-- Testes JVM cobrem a prioridade do modo de diagnóstico e a classificação sem retenção de rótulos desconhecidos; executados pelo workflow Android junto aos testes anteriores.
-- Build, identidade do pacote e assinatura são verificados pelo workflow antes de publicar a pré-release. A validação no Moto G84 depende do relatório do proprietário.
+## Verificação antes da entrega
+
+TypeScript, ESLint, Vitest, testes JVM, build Android, identidade e assinatura no workflow. O teste real no PopMove depende do aparelho autenticado do proprietário.
