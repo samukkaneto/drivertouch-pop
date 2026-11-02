@@ -10,30 +10,14 @@ import org.json.JSONObject
 object DiagnosticStore {
   private const val PREFS = "toalha_vermelha_diagnostics"
   private const val TARGET = "br.com.popmove.driver"
-  // A new experimental method must start paused even when upgrading an armed installation.
-  private const val ENABLED = "enabled_v2"
   private fun prefs(context: Context) = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 
-  fun isEnabled(context: Context): Boolean = prefs(context).getBoolean(ENABLED, true)
+  // Reports are observational. Only the panel switch controls execution.
+  fun isEnabled(context: Context): Boolean = false
 
   @Synchronized
-  fun begin(context: Context) {
-    prefs(context).edit().clear().putBoolean(ENABLED, true)
-      .putLong("startedAt", System.currentTimeMillis()).commit()
-  }
-
-  fun end(context: Context) {
-    prefs(context).edit().putBoolean(ENABLED, false).commit()
-  }
-
-  @Synchronized
-  fun beginControlTest(context: Context) {
-    val p = prefs(context)
-    val now = System.currentTimeMillis()
-    p.edit().putLong("startedAt", p.getLong("startedAt", now))
-      .putString("controlTest", JSONObject().put("startedAt", now)
-        .put("commandCountAtStart", p.getInt("longClickCount", 0)).toString())
-      .remove("lastCard").commit()
+  fun clear(context: Context) {
+    prefs(context).edit().clear().putLong("startedAt", System.currentTimeMillis()).commit()
   }
 
   @Synchronized
@@ -113,7 +97,7 @@ object DiagnosticStore {
   fun snapshot(context: Context, state: JSONObject): String {
     val p = prefs(context)
     return JSONObject()
-      .put("schema", 3)
+      .put("schema", 4)
       .put("appVersion", packageVersion(context, context.packageName))
       .put("popMoveVersion", packageVersion(context, TARGET))
       .put("device", "${Build.MANUFACTURER} ${Build.MODEL}")

@@ -10,14 +10,13 @@ import {
 
 import { clampNormalized } from "@/lib/calibration";
 import {
-  disableNativeService,
   syncSettingsToNative,
-  startNativeSingleControlTest,
+  setNativeAutomationEnabled,
+  getNativeStatus,
 } from "@/lib/safe-accept-bridge";
 import {
   DEFAULT_SETTINGS,
   sanitizeSettings,
-  type AssistMode,
   type Calibration,
   type EventRecord,
   type SafeAcceptSettings,
@@ -29,8 +28,7 @@ const MAX_EVENTS = 50;
 type SafeAcceptContextValue = {
   settings: SafeAcceptSettings;
   isLoading: boolean;
-  setMode: (mode: AssistMode) => void;
-  setArmed: (armed: boolean) => void;
+  setArmed: (armed: boolean) => Promise<{ enabled: boolean; reason: string }>;
   setCalibration: (x: number, y: number) => void;
   setBehavior: (
     values: Partial<Pick<SafeAcceptSettings, "rideMode" | "touchRadius">>,
@@ -43,8 +41,6 @@ type SafeAcceptContextValue = {
   ) => void;
   addEvent: (type: EventRecord["type"], message: string) => void;
   clearEvents: () => void;
-  disableNow: () => Promise<void>;
-  startSingleControlTest: () => Promise<{ started: boolean; reason: string }>;
 };
 
 const SafeAcceptContext = createContext<SafeAcceptContextValue | null>(null);
@@ -71,9 +67,14 @@ export function SafeAcceptProvider({
 
   useEffect(() => {
     AsyncStorage.getItem(STORAGE_KEY)
-      .then((stored) => {
-        if (!stored) return;
-        const restored = sanitizeSettings(JSON.parse(stored));
+      .then(async (stored) => {
+        const restored = stored
+          ? sanitizeSettings(JSON.parse(stored))
+          : { ...DEFAULT_SETTINGS };
+        const status = await getNativeStatus();
+        restored.isArmed = status.armed;
+        restored.mode = status.armed ? "assist" : "off";
+        restored.rideMode = status.rideMode;
         setSettings({
           ...restored,
           events: [
@@ -113,42 +114,25 @@ export function SafeAcceptProvider({
     setSettings((current) => ({ ...current, events: [] }));
   }, []);
 
-  const setMode = useCallback((mode: AssistMode) => {
-    setSettings((current) => ({
-      ...current,
-      mode,
-      isArmed: Boolean(current.calibration && mode === "assist"),
-      events: [
-        createEvent(
-          "config",
-          mode === "off"
-            ? "Execução automática desligada."
-            : "Execução automática ativada.",
-        ),
-        ...current.events,
-      ].slice(0, MAX_EVENTS),
-    }));
-  }, []);
-
-  const setArmed = useCallback((armed: boolean) => {
-    setSettings((current) => {
-      const nextArmed = Boolean(current.calibration && armed);
-      return {
+  const setArmed = useCallback(
+    async (armed: boolean) => {
+      const result = await setNativeAutomationEnabled(armed, settings.rideMode);
+      setSettings((current) => ({
         ...current,
-        mode: nextArmed ? "assist" : "off",
-        isArmed: nextArmed,
+        mode: result.enabled ? "assist" : "off",
+        isArmed: result.enabled,
         events: [
           createEvent(
             "system",
-            nextArmed
-              ? "Execução automática ativada."
-              : "Execução automática desligada.",
+            result.enabled ? "Aplicativo ligado." : "Aplicativo desligado.",
           ),
           ...current.events,
         ].slice(0, MAX_EVENTS),
-      };
-    });
-  }, []);
+      }));
+      return result;
+    },
+    [settings.rideMode],
+  );
 
   const setCalibration = useCallback((x: number, y: number) => {
     const calibration: Calibration = {
@@ -159,8 +143,6 @@ export function SafeAcceptProvider({
     setSettings((current) => ({
       ...current,
       calibration,
-      mode: "assist",
-      isArmed: true,
       events: [
         createEvent("config", "Ponto de toque calibrado no aparelho."),
         ...current.events,
@@ -187,63 +169,26 @@ export function SafeAcceptProvider({
     [],
   );
 
-  const disableNow = useCallback(async () => {
-    await disableNativeService().catch(() => undefined);
-    setSettings((current) => ({
-      ...current,
-      isArmed: false,
-      mode: "off",
-      events: [
-        createEvent("system", "Assistente desligado manualmente."),
-        ...current.events,
-      ].slice(0, MAX_EVENTS),
-    }));
-  }, []);
-
-  const startSingleControlTest = useCallback(async () => {
-    if (isLoading) return { started: false, reason: "loading" };
-    const result = await startNativeSingleControlTest(settings);
-    if (result.started) {
-      setSettings((current) => ({
-        ...current,
-        mode: "assist",
-        isArmed: true,
-        rideMode: "single",
-        events: [
-          createEvent("system", "Teste de uma oferta ativado pelo Android."),
-          ...current.events,
-        ].slice(0, MAX_EVENTS),
-      }));
-    }
-    return result;
-  }, [isLoading, settings]);
-
   const value = useMemo(
     () => ({
       settings,
       isLoading,
-      setMode,
       setArmed,
       setCalibration,
       setTuning,
       setBehavior,
       addEvent,
       clearEvents,
-      disableNow,
-      startSingleControlTest,
     }),
     [
       settings,
       isLoading,
-      setMode,
       setArmed,
       setCalibration,
       setTuning,
       setBehavior,
       addEvent,
       clearEvents,
-      disableNow,
-      startSingleControlTest,
     ],
   );
 

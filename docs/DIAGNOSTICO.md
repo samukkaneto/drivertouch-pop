@@ -1,38 +1,25 @@
-# Toalha Vermelha 0.13.2 — teste do comando do cartão
+# Toalha Vermelha 0.14.0 — uso e relatório
 
-## Evidência e objetivo
+## Ativação
 
-O proprietário relata que o balão de autoclique aparece na tentativa de toque. Não é necessário repetir a comparação com Acessibilidade ociosa. A amostra da 0.12.0 não ofereceu ações na notificação.
+1. Instalar sobre a anterior. Na migração, a chave começa desligada e Uma por vez fica selecionado.
+2. Com a Acessibilidade autorizada/conectada, ligar a única chave no painel. Abrir o PopMove na tela `Aguarde uma solicitação` para confirmar que está livre.
+3. Manter Uma por vez para não aceitar outra viagem enquanto estiver ocupado. Ao voltar à tela de espera, o aplicativo retoma automaticamente. A chave fica ligada o tempo todo.
+4. Simultâneas é opcional: aceita novas ofertas e pode rolar para localizar o cartão. A rolagem é curva, com variação limitada de pontos/duração e até três tentativas por oferta. Não comprova indetectabilidade.
+5. Desligar a chave encerra novas execuções. Ajustes, calibração e relatório não alteram a chave.
 
-O próximo teste verifica se o cartão expõe um `ACTION_LONG_CLICK` utilizável. Essa é uma ação documentada do Android; não esconde a Acessibilidade nem garante ausência do aviso. Pode estar ausente ou não efetivar o aceite. O retorno de `performAction` não confirma aceite pelo servidor.
+## Reconhecimento de disponibilidade
 
-## Instalação e teste no Moto G84 5G / Android 15
+O sinal confirmado no histórico do projeto é `Aguarde uma solicitação`. Ele deve estar visível e estável por pelo menos 1 segundo, sem uma oferta visível. Após o comando, a liberação também exige ao menos 3 segundos desde o envio para evitar a tela antiga durante a transição. Não existe liberação apenas por tempo. Telas desconhecidas e início no meio de uma corrida permanecem em espera até confirmar a tela livre. Esse retorno automático ainda requer verificação física no PopMove 5.3.0 do proprietário.
 
-1. Instalar 0.13.2 sobre a anterior. Pacote e certificado devem ser iguais; o build confere a assinatura. A atualização preserva a calibração. Confira o estado na tela antes de iniciar; o botão ativa explicitamente o teste.
-2. Com o veículo estacionado, habilitar Acessibilidade e acesso às notificações do Toalha Vermelha.
-3. Abrir **Diagnóstico** e tocar **Iniciar teste de uma oferta**. Aguardar **Teste ativo — aguardando oferta**. O botão seleciona o método, uma corrida e ativa nativamente. Se não iniciar, a tela explica o motivo.
-4. Manter o PopMove em primeiro plano e o cartão da oferta visível. Este método não rola a tela.
-5. Após a tentativa, conferir no PopMove se aceitou e se mostrou o aviso. Abrir **Diagnóstico**, marcar a observação e compartilhar o relatório. Não zerar antes de compartilhar.
+O aceite continua usando somente o ACTION_LONG_CLICK anunciado pelo cartão visível e elegível, método que o proprietário confirmou ter aceitado uma corrida sem aviso na 0.13.2. Resposta positiva do Android, isoladamente, não comprova aceite pelo servidor.
 
-O modo Uma corrida pausa após processar a oferta, mesmo sem comando disponível. Para outra tentativa, tocar novamente **Iniciar teste de uma oferta**. **Parar teste** desliga. **Apagar histórico do relatório** fica separado no final da tela e só funciona com execução parada. Corridas seguidas permanece disponível para novas ofertas visíveis. O modo **Toque anterior** mantém a execução antiga, separada do teste.
+## Relatório v4
 
-## Critérios do novo método
+O relatório é somente observacional. Exibe chave, modo Uma por vez/Simultâneas, disponibilidade, serviços conectados, últimos comandos, notificações e observações manuais. Apagar registros não muda a chave. Observações preservam a oferta e o resultado conhecidos naquele instante, sem substituição por notificações posteriores.
 
-- Pacote correto, frase exata, controle visível/habilitado, área dentro dos limites seguros, `isLongClickable` e ação anunciada.
-- Seleciona o controle elegível menor entre controles aninhados; rejeita cartões distintos ou leitura incompleta (limites de 600 nós/40 níveis).
-- Executa uma única ação anunciada. Nenhum gesto de coordenada, repetição ou rolagem é usado como alternativa.
-- Registra contagens de nós com ação de pressionamento longo e com `ACTION_PRESS_AND_HOLD`. Esta última é apenas inspecionada, não executada.
-- Sem comando: caminho indisponível nessa amostra. Comando recusado: não confirmou resposta. Comando respondido: exige observar aceite real e aviso no aparelho.
+Não guarda textos, nomes, endereços, valores ou conteúdo de comandos. Até 20 atualizações de notificações são mantidas. Horários em UTC. Dados antigos continuam identificados conforme os campos disponíveis na versão original.
 
-## Histórico e estado — diagnóstico v3
+## Verificação
 
-- A tela distingue teste pausado de teste ativo e registra início explícito/contagem de comandos da tentativa. Ler notificações com execução desligada não testa o comando.
-- Até 20 atualizações de notificações são preservadas com número sequencial, horário de recebimento e publicação.
-- Cada observação manual copia a última oferta e o resultado do cartão já conhecidos. Atualizações futuras não mudam esse vínculo. Não é uma identificação automática de qual oferta o usuário viu.
-- Observações antigas não tinham esse vínculo. O relatório informa essa limitação, sem concluir que a marcação aconteceu antes de o usuário receber uma oferta.
-- Horários UTC. Contagens incluem atualizações da mesma oferta. Histórico antigo sobrescrito na 0.12 não pode ser reconstruído.
-- Somente metadados estruturais do pacote alvo são persistidos. Sem textos, endereços, valores, nomes de passageiros ou conteúdo de comandos.
-
-## Verificação da entrega
-
-TypeScript, ESLint, 28 testes Vitest, testes JVM, build Android, identidade e assinatura aprovados no workflow 41220404044. O teste real no PopMove depende do aparelho autenticado do proprietário.
+TypeScript, ESLint, Vitest, testes JVM, build Android, identidade do pacote e assinatura antes da entrega. A validação real da retomada após terminar uma viagem e da rolagem simultânea depende do aparelho autenticado.

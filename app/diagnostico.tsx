@@ -1,4 +1,4 @@
-import { useFocusEffect, useRouter } from "expo-router";
+import { useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
 import {
   Alert,
@@ -23,17 +23,14 @@ import {
 } from "@/lib/diagnostics";
 import type { DiagnosticSnapshot } from "@/lib/diagnostics";
 import {
-  beginDiagnostics,
+  clearDiagnosticReport,
   getDiagnostics,
   openNativeAccessibilitySettings,
   openNativeNotificationSettings,
   recordDiagnosticObservation,
 } from "@/lib/safe-accept-bridge";
-import { useSafeAccept } from "@/lib/safe-accept-context";
 
 export default function DiagnosticScreen() {
-  const { disableNow, startSingleControlTest, isLoading } = useSafeAccept();
-  const router = useRouter();
   const [snapshot, setSnapshot] = useState<DiagnosticSnapshot | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -87,56 +84,8 @@ export default function DiagnosticScreen() {
     }
   }
 
-  async function clearReport() {
-    if (!(await beginDiagnostics())) {
-      Alert.alert(
-        "Aguarde a tentativa atual",
-        "O Android ainda está concluindo uma execução. Tente novamente em alguns segundos.",
-      );
-      return;
-    }
-    await disableNow();
-  }
-
-  async function startTest() {
-    const result = await startSingleControlTest();
-    if (result.started) return;
-    const reasons: Record<string, string> = {
-      accessibility_disabled:
-        "Ative a Acessibilidade do Toalha Vermelha nos ajustes abaixo e volte para iniciar o teste.",
-      accessibility_disconnected:
-        "A permissão está ligada, mas o serviço ainda não conectou. Desligue e ligue a Acessibilidade do Toalha Vermelha e tente novamente.",
-      calibration_required:
-        "A referência da frase ainda não foi calibrada. Faça a calibração e volte para iniciar o teste.",
-      busy: "O Android ainda está concluindo uma tentativa anterior. Aguarde alguns segundos e tente iniciar novamente.",
-      loading: "Aguarde o aplicativo terminar de carregar as configurações.",
-      native_unavailable: "Este teste precisa do APK instalado no Android.",
-      activation_failed:
-        "O Android não confirmou a ativação. A execução ficou desligada; tente novamente.",
-    };
-    Alert.alert(
-      "Teste não iniciado",
-      reasons[result.reason] ??
-        "Não foi possível ativar a execução. Tente novamente.",
-      result.reason === "calibration_required"
-        ? [
-            { text: "Voltar", style: "cancel" },
-            {
-              text: "Calibrar",
-              onPress: () => router.push("/(tabs)/calibrar"),
-            },
-          ]
-        : [{ text: "Entendi" }],
-    );
-  }
-
   const sample = snapshot?.lastOffer ?? snapshot?.lastNotification;
   const testStatus = snapshot ? controlTestStatus(snapshot) : null;
-  const testArmed =
-    !!snapshot &&
-    !snapshot.state.diagnosticMode &&
-    snapshot.state.automationArmed &&
-    snapshot.state.inputMethod === "control";
   const permission = (granted: boolean, connected: boolean) =>
     !granted
       ? "Desligada"
@@ -145,37 +94,17 @@ export default function DiagnosticScreen() {
         : "Ligada; aguardando conexão";
   return (
     <ScrollView contentContainerStyle={styles.content}>
-      <Text style={styles.title}>Resultado do teste</Text>
+      <Text style={styles.title}>Relatório</Text>
       <Text style={styles.body}>
-        Confira o comando disponível no cartão, o resultado da tentativa e o
-        histórico das notificações. Abrir esta tela não apaga o relatório.
+        Acompanhe os comandos e o estado do aplicativo. A ativação é controlada
+        pela chave no painel.
       </Text>
       {error ? <Text style={styles.error}>{error}</Text> : null}
-      <SectionCard title="Testar o comando do cartão">
+      <SectionCard title="Estado da execução">
         <Text accessibilityLiveRegion="polite" style={styles.testState}>
-          {testStatus?.title ?? "Lendo estado do Android…"}
+          {testStatus?.title ?? "Carregando…"}
         </Text>
         <Text style={styles.body}>{testStatus?.detail}</Text>
-        <Text style={styles.body}>
-          Com o veículo estacionado, inicie abaixo e depois abra o PopMove. O
-          botão ativa Comando do cartão e Uma corrida. A leitura das
-          notificações continua no relatório.
-        </Text>
-        <ActionButton
-          label={testArmed ? "Teste ativado" : "Iniciar teste de uma oferta"}
-          icon="play-arrow"
-          disabled={busy || isLoading || !snapshot || testArmed}
-          onPress={() => void act(startTest)}
-        />
-        {testArmed ? (
-          <ActionButton
-            label="Parar teste"
-            icon="stop"
-            variant="danger"
-            disabled={busy}
-            onPress={() => void act(disableNow)}
-          />
-        ) : null}
         <ActionButton
           label="Acesso às notificações"
           icon="notifications-active"
@@ -196,16 +125,8 @@ export default function DiagnosticScreen() {
           <SectionCard title="Estado observado agora">
             <KeyValue label="Versão" value={snapshot.appVersion} />
             <KeyValue
-              label="Bloqueio de execução"
-              value={
-                snapshot.state.diagnosticMode
-                  ? "Ligado; execução pausada"
-                  : "Desligado"
-              }
-            />
-            <KeyValue
-              label="Execução automática"
-              value={snapshot.state.automationArmed ? "Ativa" : "Desligada"}
+              label="Chave do painel"
+              value={snapshot.state.automationArmed ? "Ligada" : "Desligada"}
             />
             <KeyValue
               label="Acessibilidade"
@@ -287,7 +208,7 @@ export default function DiagnosticScreen() {
           <SectionCard title="Registrar o que você viu">
             {!snapshot.lastCard ? (
               <Text style={styles.testState}>
-                Ainda não houve análise do cartão neste teste.
+                Nenhum cartão analisado desde o último registro disponível.
               </Text>
             ) : null}
             <Text style={styles.body}>
@@ -356,24 +277,24 @@ export default function DiagnosticScreen() {
             ) : null}
           </SectionCard>
           <Text style={styles.small}>
-            Se o cartão não oferecer o comando, o teste termina sem um toque
-            substituto. O resultado será registrado aqui.
+            Se o cartão não oferecer o comando, a oferta fica sem acionamento. O
+            resultado será registrado aqui.
           </Text>
           <ActionButton
             label="Apagar histórico do relatório"
             icon="delete-outline"
             variant="secondary"
-            disabled={busy || snapshot.state.automationArmed}
+            disabled={busy}
             onPress={() =>
               Alert.alert(
                 "Apagar histórico?",
-                "Isso apaga o relatório e mantém a execução pausada. Compartilhe antes se quiser guardar o resultado.",
+                "Isso apaga os registros do relatório. A execução mantém o estado da chave. Compartilhe antes se quiser guardar o resultado.",
                 [
                   { text: "Cancelar", style: "cancel" },
                   {
                     text: "Apagar",
                     style: "destructive",
-                    onPress: () => void act(clearReport),
+                    onPress: () => void act(clearDiagnosticReport),
                   },
                 ],
               )

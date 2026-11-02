@@ -15,13 +15,4 @@ class TouchRegionTest {
     assertNull(TouchRegion.stablePath(0f, 0f, Float.NaN, 10f))
   }
 
-  @Test fun singleModeOnlyAllowsTheSameOfferRetryUntilExplicitResume() {
-    assertTrue(RidePolicy.allows("single", null, "a", false))
-    assertFalse(RidePolicy.allows("single", "a", "b", false))
-    assertFalse(RidePolicy.allows("single", "a", "a", false))
-    assertFalse(RidePolicy.allows("single", "a", "b", true))
-    assertTrue(RidePolicy.allows("single", "a", "a", true))
-    assertTrue(RidePolicy.allows("continuous", "a", "b", false))
-    assertTrue(RidePolicy.allows("single", null, "b", false))
-  }
 }

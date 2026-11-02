@@ -14,7 +14,9 @@ type NativeStatus = {
   inputMethod: "control" | "gesture";
   nativeModuleAvailable: boolean;
   armed: boolean;
-  singlePaused: boolean;
+  tripState: "unknown" | "ready" | "awaiting_trip" | "busy";
+  rideMode: "single" | "continuous";
+  serviceConnected: boolean;
   lastNativeEvent: string | null;
   notificationListenerEnabled: boolean;
   recentOfferNotification: boolean;
@@ -31,17 +33,12 @@ export function isNativeBridgeAvailable() {
 export async function syncSettingsToNative(settings: SafeAcceptSettings) {
   return enqueueConfig(async () => {
     if (!bridge) return false;
-    if (!settings.calibration) {
-      await bridge.disableNow();
-      return false;
-    }
-
     await bridge.updateBehavior(settings.rideMode, settings.touchRadius);
     return bridge.updateConfig(
       settings.isArmed,
       settings.mode,
-      settings.calibration.x,
-      settings.calibration.y,
+      settings.calibration?.x ?? -1,
+      settings.calibration?.y ?? -1,
       settings.longPressDurationMs,
       settings.detectionDelayMs,
       settings.acceptMarker.trim().toLowerCase(),
@@ -67,7 +64,9 @@ export async function getNativeStatus(): Promise<NativeStatus> {
       inputMethod: "control",
       nativeModuleAvailable: false,
       armed: false,
-      singlePaused: false,
+      tripState: "unknown",
+      rideMode: "single",
+      serviceConnected: false,
       lastNativeEvent: null,
       notificationListenerEnabled: false,
       recentOfferNotification: false,
@@ -79,36 +78,18 @@ export async function getNativeStatus(): Promise<NativeStatus> {
   return { ...status, nativeModuleAvailable: true };
 }
 
-export async function resumeSingleRide() {
-  return bridge ? bridge.resumeSingleRide() : false;
+export async function clearDiagnosticReport() {
+  return bridge ? bridge.clearDiagnosticReport() : false;
 }
 
-export async function beginDiagnostics() {
-  return enqueueConfig(async () =>
-    bridge ? bridge.beginDiagnostics() : false,
-  );
-}
-
-export async function endDiagnostics() {
-  return enqueueConfig(async () => (bridge ? bridge.endDiagnostics() : false));
-}
-
-export async function setNativeInputMethod(method: "control" | "gesture") {
-  return enqueueConfig(async () =>
-    bridge ? bridge.setInputMethod(method) : false,
-  );
-}
-
-export async function startNativeSingleControlTest(
-  settings: SafeAcceptSettings,
+export async function setNativeAutomationEnabled(
+  enabled: boolean,
+  rideMode: "single" | "continuous",
 ) {
   return enqueueConfig(async () =>
     bridge
-      ? bridge.startSingleControlTest(
-          settings.calibration?.x ?? -1,
-          settings.calibration?.y ?? -1,
-        )
-      : { started: false, reason: "native_unavailable" },
+      ? bridge.setAutomationEnabled(enabled, rideMode)
+      : { enabled: false, reason: "native_unavailable" },
   );
 }
 
@@ -122,10 +103,6 @@ export async function recordDiagnosticObservation(
   result: "appeared" | "not_observed",
 ) {
   return bridge ? bridge.recordDiagnosticObservation(result) : false;
-}
-
-export async function disableNativeService() {
-  return enqueueConfig(async () => (bridge ? bridge.disableNow() : false));
 }
 
 export async function getNativeEvents(): Promise<NativeEventRecord[]> {

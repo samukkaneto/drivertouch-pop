@@ -58,25 +58,18 @@ class SafeAcceptBridgeModule : Module() {
       true
     }.runOnQueue(Queues.MAIN)
 
-    AsyncFunction("resumeSingleRide") {
-      if (PopMoveAccessibilityService.isResolvingOffer()) {
-        false
-      } else {
-        SafeAcceptStore.resumeSingleRide(context)
-        true
-      }
-    }.runOnQueue(Queues.MAIN)
-
     AsyncFunction("getStatus") {
       val config = SafeAcceptStore.load(context)
       mapOf(
         "serviceEnabled" to isAccessibilityServiceEnabled(),
+        "serviceConnected" to PopMoveAccessibilityService.serviceIsEnabled,
         "diagnosticMode" to DiagnosticStore.isEnabled(context),
         "inputMethod" to config.inputMethod,
         "notificationListenerEnabled" to isNotificationListenerEnabled(),
         "recentOfferNotification" to SafeAcceptStore.recentOfferNotification(context),
         "armed" to config.armed,
-        "singlePaused" to config.singlePaused,
+        "tripState" to config.tripState,
+        "rideMode" to config.rideMode,
         "effectiveDurationMs" to config.longPressDurationMs,
         "lastNativeEvent" to SafeAcceptStore.lastEvent(context)
       )
@@ -86,18 +79,8 @@ class SafeAcceptBridgeModule : Module() {
       SafeAcceptStore.events(context)
     }
 
-    AsyncFunction("beginDiagnostics") {
-      if (!PopMoveAccessibilityService.prepareDiagnostics()) false else {
-        DiagnosticStore.begin(context)
-        SafeAcceptStore.disable(context)
-        true
-      }
-    }.runOnQueue(Queues.MAIN)
-
-    // Called only after the user explicitly chooses to reactivate the existing automation.
-    AsyncFunction("endDiagnostics") {
-      SafeAcceptStore.disable(context)
-      DiagnosticStore.end(context)
+    AsyncFunction("clearDiagnosticReport") {
+      DiagnosticStore.clear(context)
       true
     }.runOnQueue(Queues.MAIN)
 
@@ -105,29 +88,14 @@ class SafeAcceptBridgeModule : Module() {
       DiagnosticStore.snapshot(context, diagnosticState())
     }.runOnQueue(Queues.MAIN)
 
-    AsyncFunction("setInputMethod") { method: String ->
-      if (PopMoveAccessibilityService.isResolvingOffer()) false else {
-        SafeAcceptStore.setInputMethod(context, method)
-        true
-      }
-    }.runOnQueue(Queues.MAIN)
-
-    // One user action, one native transition. No gesture is dispatched from this screen.
-    AsyncFunction("startSingleControlTest") { x: Double, y: Double ->
+    AsyncFunction("setAutomationEnabled") { enabled: Boolean, rideMode: String ->
       val blocker = when {
-        !isAccessibilityServiceEnabled() -> "accessibility_disabled"
-        !PopMoveAccessibilityService.serviceIsEnabled -> "accessibility_disconnected"
-        !x.isFinite() || !y.isFinite() || x !in 0.0..1.0 || y !in 0.0..1.0 -> "calibration_required"
-        !PopMoveAccessibilityService.prepareDiagnostics() -> "busy"
+        enabled && !isAccessibilityServiceEnabled() -> "accessibility_disabled"
+        enabled && !PopMoveAccessibilityService.serviceIsEnabled -> "accessibility_disconnected"
         else -> null
       }
-      if (blocker != null) mapOf("started" to false, "reason" to blocker) else {
-        SafeAcceptStore.armSingleControlTest(context, x, y)
-        DiagnosticStore.end(context)
-        val armed = SafeAcceptStore.load(context).armed
-        if (armed) DiagnosticStore.beginControlTest(context) else SafeAcceptStore.disable(context)
-        mapOf("started" to armed, "reason" to if (armed) "started" else "activation_failed")
-      }
+      if (blocker == null) SafeAcceptStore.setAutomationEnabled(context, enabled, rideMode)
+      mapOf("enabled" to SafeAcceptStore.load(context).armed, "reason" to (blocker ?: "updated"))
     }.runOnQueue(Queues.MAIN)
 
     AsyncFunction("recordDiagnosticObservation") { result: String ->
@@ -166,6 +134,8 @@ class SafeAcceptBridgeModule : Module() {
     .put("diagnosticMode", DiagnosticStore.isEnabled(context))
     .put("automationArmed", SafeAcceptStore.load(context).armed)
     .put("inputMethod", SafeAcceptStore.load(context).inputMethod)
+    .put("rideMode", SafeAcceptStore.load(context).rideMode)
+    .put("tripState", SafeAcceptStore.load(context).tripState)
     .put("accessibilityGranted", isAccessibilityServiceEnabled())
     .put("accessibilityConnected", PopMoveAccessibilityService.serviceIsEnabled)
     .put("notificationGranted", isNotificationListenerEnabled())

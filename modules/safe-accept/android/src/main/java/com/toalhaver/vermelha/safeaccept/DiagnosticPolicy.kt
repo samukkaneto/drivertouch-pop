@@ -3,11 +3,8 @@ package com.toalhaver.vermelha.safeaccept
 import java.text.Normalizer
 import java.util.Locale
 
-/** Pure rules: diagnostics must win over restored/calibrated automation settings. */
+/** Structural notification labels used in reports. */
 object DiagnosticPolicy {
-  fun effectiveMode(storedMode: String?, diagnostic: Boolean): String =
-    if (diagnostic || storedMode == "off") "off" else "assist"
-
   // Only a fixed category is retained. Unknown labels may contain personal data.
   fun actionCategory(title: CharSequence?): String {
     val normalized = Normalizer.normalize(title?.toString().orEmpty().take(160), Normalizer.Form.NFD)

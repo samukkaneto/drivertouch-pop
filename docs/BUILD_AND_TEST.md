@@ -40,7 +40,7 @@ O sucesso do Gradle prova que o código compila e a APK é instalável. A confir
 
 - Mudar o tamanho do guia visual em Calibrar e confirmar que a seleção persiste ao reabrir; isso não deve alterar o gesto automático.
 - Com uma frase de aceite visível, confirmar que o caminho gerado tem dois pontos iguais no centro dos limites detectados.
-- Em Uma corrida, confirmar a pausa depois da tentativa, inclusive reabrindo o app e alterando o raio; nenhuma segunda oferta deve receber gesto antes de Liberar próxima corrida.
+- Em Uma por vez, confirmar chave ligada durante a viagem, nenhuma segunda oferta acionada/rolada e retomada automática após voltar à tela de espera. Reabrir, calibrar e consultar relatório não alteram a chave.
 - Em Corridas seguidas, conferir o comportamento já existente de nova oferta durante viagem.
 - Desligar durante uma espera de repetição deve impedir o próximo gesto.
 - A área efetiva é reduzida aos limites visíveis da frase. Sem frase visível não existe toque automático.

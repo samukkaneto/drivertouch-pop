@@ -2,6 +2,20 @@
 
 > Estado atualizado em 31/10/2026. Leia primeiro [`PROJECT_STATUS.md`](PROJECT_STATUS.md), que é o relatório mestre e a fonte de verdade para retomada.
 
+## Atualização 0.14.0 — chave única e uma corrida por vez
+
+Atualizado em 02/11/2026.
+
+- O proprietário confirmou que o comando do cartão da 0.13.2 aceitou a corrida sem mostrar aviso. Esse método foi preservado. Não concluir indetectabilidade permanente a partir dessa observação.
+- Correção de significado solicitada: **Uma por vez** permite aceitar próximas corridas automaticamente após ficar livre; não significa uma tentativa e desligar. **Simultâneas** permite ofertas durante outra corrida e continua opcional.
+- Existe uma única chave de execução no painel, confirmada pelo estado nativo persistente. Relatório, calibração, ajustes e reabertura não ativam nem desativam a execução. Removidos Iniciar teste, Parar teste, Liberar próxima corrida e seleção do método antigo da interface.
+- A migração inicia desligada, seleciona Uma por vez e preserva a calibração. O comando sem coordenadas não depende dessa calibração para ligar.
+- Em Uma por vez, exige a tela conhecida `Aguarde uma solicitação` visível e estável por pelo menos 1 segundo. Depois de um comando, aguarda essa tela voltar sem oferta visível; um timeout ou desaparecimento do cartão não libera sozinho. Há também proteção de 3 segundos após o comando contra leitura transitória da tela antiga. A chave continua ligada durante a espera.
+- Na primeira ativação/reconexão, se a disponibilidade não puder ser confirmada, aguarda a tela de espera. Esse comportamento é conservador: um cartão ativo anterior à ativação não é presumido como ausência de corrida. O reconhecimento da volta à tela de espera precisa ser validado no Moto G84.
+- Uma por vez não abre novas ofertas enquanto aguarda disponibilidade nem faz rolagem. Simultâneas mantém o mesmo aceite e pode procurar a nova oferta com até três curvas de rolagem; pontos dentro da área útil e duração de 320–520 ms. A curva não garante ausência de aviso.
+- Branch `codex/chave-unica-0.14.0`, pacote `com.toalhaver.vermelha`, versão 0.14.0 / código 16. Relatório v4 registra chave, modo e estado da disponibilidade, sem botões de ativação.
+- Testes cobrem ciclos de corridas, bloqueio de oferta enquanto ocupado, retorno automático somente na tela livre, modo simultâneo e limites das curvas. Conferir entrega verificada e APK após o workflow.
+
 ## Entrega verificada — 0.13.2
 
 - APK atual entregue: https://github.com/samukkaneto/drivertouch-pop/releases/download/v0.13.2/Toalha-Vermelha-0.13.2-teste-direto.apk

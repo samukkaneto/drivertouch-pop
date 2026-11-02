@@ -49,6 +49,41 @@ const offer: NotificationSample = {
 };
 
 describe("diagnostic evidence", () => {
+  it("keeps the current switch state visible even when the report contains an earlier successful command", () => {
+    const current: DiagnosticSnapshot = {
+      ...snapshot,
+      schema: 4,
+      state: {
+        ...snapshot.state,
+        diagnosticMode: false,
+        automationArmed: true,
+        accessibilityConnected: true,
+        rideMode: "single",
+        tripState: "busy",
+      },
+      lastCard: {
+        at: 100,
+        reason: "available",
+        markerNodes: 1,
+        longClickNodes: 1,
+        pressAndHoldNodes: 0,
+        eligibleNodes: 1,
+        available: true,
+        performed: true,
+      },
+    };
+    expect(controlTestStatus(current).title).toBe(
+      "Ligado · aguardando ficar livre",
+    );
+    expect(controlTestStatus(current).active).toBe(true);
+    expect(
+      controlTestStatus({
+        ...current,
+        state: { ...current.state, automationArmed: false },
+      }).title,
+    ).toBe("Desligado");
+    expect(formatDiagnosticReport(current)).not.toContain("Iniciar teste");
+  });
   it("identifies the reported connected-but-paused state as no execution trial", () => {
     const paused: DiagnosticSnapshot = {
       ...snapshot,

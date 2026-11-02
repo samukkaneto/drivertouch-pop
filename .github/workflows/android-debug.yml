@@ -5,7 +5,7 @@ on:
   push:
     branches:
       - main
-      - codex/teste-direto-0.13.2
+      - codex/chave-unica-0.14.0
 
 permissions:
   contents: read
@@ -76,16 +76,16 @@ jobs:
       - name: Stage verified APK for delivery
         run: |
           mkdir apk-delivery
-          cp android/app/build/outputs/apk/release/app-release.apk apk-delivery/Toalha-Vermelha-0.13.2-teste-direto.apk
+          cp android/app/build/outputs/apk/release/app-release.apk apk-delivery/Toalha-Vermelha-0.14.0.apk
           cp apk-info.txt apk-delivery/
           cd apk-delivery
-          sha256sum Toalha-Vermelha-0.13.2-teste-direto.apk > apk.sha256
+          sha256sum Toalha-Vermelha-0.14.0.apk > apk.sha256
 
       - name: Make APK available as a downloadable artifact
         uses: actions/upload-artifact@v4
         continue-on-error: true
         with:
-          name: Toalha-Vermelha-0.13.2-teste-direto
+          name: Toalha-Vermelha-0.14.0
           path: apk-delivery/*
           retention-days: 3
           compression-level: 0
@@ -119,10 +119,10 @@ jobs:
           GH_REPO: ${{ github.repository }}
         run: |
           sha256sum --check apk.sha256
-          if gh release view v0.13.2 >/dev/null 2>&1; then
+          if gh release view v0.14.0 >/dev/null 2>&1; then
             echo "Existing release preserved."
           else
-            gh release create v0.13.2 Toalha-Vermelha-0.13.2-teste-direto.apk apk-info.txt apk.sha256 \
-              --target "$GITHUB_SHA" --title "Toalha Vermelha 0.13.2 — Início direto do teste" --prerelease \
-              --notes "Botão Iniciar teste de uma oferta na tela de diagnóstico: seleciona Comando do cartão, Uma corrida e ativa a execução em uma operação confirmada pelo Android. Mostra claramente teste pausado, aguardando oferta e tentativa realizada. Corrige a ordem de sincronização das configurações e mantém os métodos anteriores. O método de aceite é o mesmo da 0.13.1; aceite real e aviso ainda precisam do teste no Moto G84. APK com testes e assinatura verificados."
+            gh release create v0.14.0 Toalha-Vermelha-0.14.0.apk apk-info.txt apk.sha256 \
+              --target "$GITHUB_SHA" --title "Toalha Vermelha 0.14.0 — Chave única e uma por vez" --prerelease \
+              --notes "Uma chave Ligado/Desligado no painel. Uma por vez mantém o app ligado, aguarda a tela confirmada de disponibilidade e retoma sem reativação manual. Simultâneas permanece opcional, com rolagem curva limitada à área útil. Preserva o comando do cartão validado pelo proprietário. Relatório somente observacional. Migração começa desligada com Uma por vez selecionado. Novos comportamentos ainda precisam de validação no aparelho."
           fi

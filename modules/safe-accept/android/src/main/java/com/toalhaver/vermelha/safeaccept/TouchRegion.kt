@@ -11,9 +11,3 @@ object TouchRegion {
     return listOf(center, center)
   }
 }
-
-object RidePolicy {
-  fun allows(mode: String, consumedIdentity: String?, identity: String, retry: Boolean): Boolean {
-    return mode == "continuous" || consumedIdentity == null || (retry && consumedIdentity == identity)
-  }
-}

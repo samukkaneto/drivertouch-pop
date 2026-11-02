@@ -26,6 +26,14 @@ import java.text.Normalizer
 class PopMoveAccessibilityService : AccessibilityService() {
   private var lastGestureAt = 0L
   private val offerHandler = Handler(Looper.getMainLooper())
+  private val monitorHandler = Handler(Looper.getMainLooper())
+  private val monitor = object : Runnable {
+    override fun run() {
+      if (currentInstance !== this@PopMoveAccessibilityService) return
+      if (SafeAcceptStore.load(this@PopMoveAccessibilityService).armed) evaluateActiveWindow(allowScroll = true)
+      monitorHandler.postDelayed(this, 750L)
+    }
+  }
   private var overlayView: View? = null
   private var gestureInFlight = false
   private var offerResolutionInProgress = false
@@ -37,6 +45,8 @@ class PopMoveAccessibilityService : AccessibilityService() {
 
   private data class ScreenSnapshot(
     val markerVisible: Boolean,
+    val anyOfferVisible: Boolean,
+    val idleVisible: Boolean,
     val markerCenterX: Float?,
     val markerCenterY: Float?,
     val fingerprint: String,
@@ -58,6 +68,8 @@ class PopMoveAccessibilityService : AccessibilityService() {
   override fun onServiceConnected() {
     serviceIsEnabled = true
     currentInstance = this
+    RideSessionStore.invalidateAvailability(this)
+    monitorHandler.post(monitor)
     val config = SafeAcceptStore.load(this)
     SafeAcceptStore.record(
       this,
@@ -90,6 +102,7 @@ class PopMoveAccessibilityService : AccessibilityService() {
   override fun onDestroy() {
     serviceIsEnabled = false
     offerHandler.removeCallbacksAndMessages(null)
+    monitorHandler.removeCallbacksAndMessages(null)
     removeOverlay()
     if (currentInstance === this) currentInstance = null
     super.onDestroy()
@@ -98,7 +111,6 @@ class PopMoveAccessibilityService : AccessibilityService() {
   private fun evaluateActiveWindow(allowScroll: Boolean = false) {
     val config = SafeAcceptStore.load(this)
     if (!config.armed || config.mode == "off") return
-    if (config.x !in 0f..1f || config.y !in 0f..1f) return
     if (offerResolutionInProgress || overlayView != null) return
 
     val root = rootInActiveWindow ?: return
@@ -108,11 +120,16 @@ class PopMoveAccessibilityService : AccessibilityService() {
     }
 
     val snapshot = buildScreenSnapshot(root)
+    RideSessionStore.observe(this, snapshot.idleVisible, snapshot.anyOfferVisible)
+    if (!RideSessionPolicy.mayAccept(config.rideMode, RideSessionStore.load(this))) {
+      root.recycle()
+      return
+    }
     val notificationFingerprint = SafeAcceptStore.currentOfferNotificationFingerprint(this)
     if (!snapshot.markerVisible) {
       root.recycle()
-      if (config.inputMethod == "gesture" && allowScroll && notificationFingerprint != null) {
-        attemptOfferScroll(notificationFingerprint, snapshot.safeBounds)
+      if (allowScroll && RideSessionPolicy.mayScroll(config.rideMode, notificationFingerprint != null, snapshot.markerVisible)) {
+        attemptOfferScroll(notificationFingerprint ?: return, snapshot.safeBounds)
       }
       return
     }
@@ -133,8 +150,8 @@ class PopMoveAccessibilityService : AccessibilityService() {
     val x = snapshot.markerCenterX ?: return
     val y = snapshot.markerCenterY ?: return
     if (!containsPoint(snapshot.safeBounds, x, y)) {
-      if (config.inputMethod == "gesture" && allowScroll && notificationFingerprint != null) {
-        attemptOfferScroll(notificationFingerprint, snapshot.safeBounds)
+      if (allowScroll && RideSessionPolicy.mayScroll(config.rideMode, notificationFingerprint != null, snapshot.markerVisible)) {
+        attemptOfferScroll(notificationFingerprint ?: return, snapshot.safeBounds)
       }
       return
     }
@@ -211,7 +228,7 @@ class PopMoveAccessibilityService : AccessibilityService() {
       object : GestureResultCallback() {
         override fun onCompleted(gestureDescription: GestureDescription?) {
           gestureInFlight = false
-          SafeAcceptStore.consumeSingleRide(this@PopMoveAccessibilityService, safeAttempt.identity)
+          SafeAcceptStore.recordAcceptanceAttempt(this@PopMoveAccessibilityService, safeAttempt.identity)
           SafeAcceptStore.record(
             this@PopMoveAccessibilityService,
             "gesture",
@@ -234,7 +251,7 @@ class PopMoveAccessibilityService : AccessibilityService() {
     )
 
     DiagnosticStore.command(this, "press", accepted)
-    if (accepted) SafeAcceptStore.consumeSingleRide(this, attempt.identity)
+    if (accepted) SafeAcceptStore.recordAcceptanceAttempt(this, attempt.identity)
 
     if (!accepted) {
       gestureInFlight = false
@@ -321,11 +338,13 @@ class PopMoveAccessibilityService : AccessibilityService() {
   private fun dispatchControlLongClick(attempt: GestureAttempt) {
     val root = rootInActiveWindow ?: return
     if (root.packageName?.toString() != POP_DRIVER_PACKAGE) { root.recycle(); return }
+    val currentScreen = buildScreenSnapshot(root)
+    RideSessionStore.observe(this, currentScreen.idleVisible, currentScreen.anyOfferVisible)
+    if (!SafeAcceptStore.canDispatch(this, attempt.identity, false)) { root.recycle(); return }
     val scan = try { ControlTargetScanner.inspect(root, calculateSafeBounds(root)) } finally { root.recycle() }
     DiagnosticStore.card(this, scan.metadata)
     val target = scan.target
     if (target == null) {
-      SafeAcceptStore.consumeSingleRide(this, attempt.identity)
       SafeAcceptStore.record(this, "system", "Comando do cartão indisponível: ${scan.metadata.optString("reason")}. Nenhum toque substituto enviado.")
       return
     }
@@ -336,15 +355,14 @@ class PopMoveAccessibilityService : AccessibilityService() {
           !isTargetWindowActive() || !target.refresh() || !target.isEnabled || !target.isVisibleToUser ||
           !target.isLongClickable || target.actionList.none { it.id == AccessibilityNodeInfo.ACTION_LONG_CLICK }) {
         DiagnosticStore.card(this, scan.metadata.put("reason", "changed_before_action").put("available", false))
-        SafeAcceptStore.consumeSingleRide(this, attempt.identity)
         return
       }
       // Only invoke the action advertised by the visible card. No coordinate gesture or retry fallback.
       val result = runCatching { target.performAction(AccessibilityNodeInfo.ACTION_LONG_CLICK) }.getOrDefault(false)
       DiagnosticStore.command(this, "longClick", result)
       DiagnosticStore.card(this, scan.metadata.put("at", System.currentTimeMillis()).put("performed", result))
-      SafeAcceptStore.consumeSingleRide(this, attempt.identity)
-      completeOfferSession(attempt.identity)
+      SafeAcceptStore.recordAcceptanceAttempt(this, attempt.identity)
+      SafeAcceptStore.currentOfferNotificationFingerprint(this)?.let { completeOfferSession("notification:$it") }
       SafeAcceptStore.record(this, "system", if (result)
         "O controle respondeu ao pressionamento longo; confirme no PopMove se a corrida foi aceita."
         else "O controle recusou o pressionamento longo; nenhum toque substituto enviado.")
@@ -355,6 +373,7 @@ class PopMoveAccessibilityService : AccessibilityService() {
   }
 
   private fun attemptOfferScroll(fingerprint: String, safeBounds: Rect) {
+    if (SafeAcceptStore.load(this).rideMode != "continuous") return
     if (scrollOfferFingerprint != fingerprint) {
       scrollOfferFingerprint = fingerprint
       exhaustedScrollFingerprint = null
@@ -382,25 +401,22 @@ class PopMoveAccessibilityService : AccessibilityService() {
   }
 
   private fun dispatchVerticalScrollGesture(safeBounds: Rect) {
-    if (SafeAcceptStore.load(this).inputMethod != "gesture") return
-    if (overlayView != null || !SafeAcceptStore.load(this).armed || !isTargetWindowActive()) return
-    if (safeBounds.width() < dp(MIN_SAFE_WIDTH_DP) || safeBounds.height() < dp(MIN_SAFE_HEIGHT_DP)) {
-      SafeAcceptStore.record(
-        this,
-        "gesture",
-        "Rolagem impedida: área útil do POP driver não pôde ser confirmada"
-      )
-      return
-    }
-    val fixedX = safeBounds.left + safeBounds.width() * VERTICAL_SCROLL_X
-    val startY = safeBounds.top + safeBounds.height() * VERTICAL_SCROLL_START_Y
-    val endY = safeBounds.top + safeBounds.height() * VERTICAL_SCROLL_END_Y
+    val config = SafeAcceptStore.load(this)
+    if (overlayView != null || !config.armed || config.rideMode != "continuous" || !isTargetWindowActive()) return
+    if (!SafeAcceptStore.recentOfferNotification(this)) return
+    val root = rootInActiveWindow ?: return
+    if (root.packageName?.toString() != POP_DRIVER_PACKAGE) { root.recycle(); return }
+    val fresh = try { buildScreenSnapshot(root) } finally { root.recycle() }
+    if (fresh.markerVisible) return
+    val area = fresh.safeBounds
+    if (area.width() < dp(MIN_SAFE_WIDTH_DP) || area.height() < dp(MIN_SAFE_HEIGHT_DP)) return
+    val curve = ScrollTrajectory.create(area.left.toFloat(), area.top.toFloat(), area.right.toFloat(), area.bottom.toFloat()) ?: return
     val path = Path().apply {
-      moveTo(fixedX, startY)
-      lineTo(fixedX, endY)
+      moveTo(curve.start.x, curve.start.y)
+      cubicTo(curve.control1.x, curve.control1.y, curve.control2.x, curve.control2.y, curve.end.x, curve.end.y)
     }
     val gesture = GestureDescription.Builder()
-      .addStroke(GestureDescription.StrokeDescription(path, 0L, SCROLL_DURATION_MS))
+      .addStroke(GestureDescription.StrokeDescription(path, 0L, curve.durationMs))
       .build()
     scrollGestureInFlight = true
     val accepted = dispatchGesture(
@@ -460,13 +476,18 @@ class PopMoveAccessibilityService : AccessibilityService() {
 
   private fun buildScreenSnapshot(root: AccessibilityNodeInfo): ScreenSnapshot {
     val allTexts = mutableListOf<String>()
+    val statusTexts = mutableListOf<String>()
     val visibleTexts = mutableListOf<String>()
     val exactMarkerBounds = mutableListOf<Rect>()
     val markerWordBounds = mutableListOf<Rect>()
     val marker = normalize(OFFER_SCREEN_MARKER)
     val safeBounds = calculateSafeBounds(root)
 
-    fun visit(node: AccessibilityNodeInfo) {
+    var visited = 0
+    var truncated = false
+    fun visit(node: AccessibilityNodeInfo, depth: Int = 0) {
+      if (visited >= 600 || depth >= 40) { truncated = true; return }
+      visited++
       val nodeTexts = listOf(node.text, node.contentDescription)
         .filterNotNull()
         .map { normalize(it.toString()) }
@@ -476,16 +497,21 @@ class PopMoveAccessibilityService : AccessibilityService() {
         allTexts.add(text)
         if (!node.isVisibleToUser) continue
 
+        val statusBounds = Rect().also(node::getBoundsInScreen)
+        val metrics = resources.displayMetrics
+        if (!statusBounds.isEmpty && statusBounds.intersect(Rect(0, 0, metrics.widthPixels, metrics.heightPixels))) statusTexts.add(text)
+
         val bounds = clippedNodeBounds(node, safeBounds) ?: continue
         visibleTexts.add(text)
         if (text.contains(marker)) exactMarkerBounds.add(bounds)
         if (OFFER_MARKER_WORDS.any { word -> text.contains(word) }) markerWordBounds.add(bounds)
       }
 
-      for (index in 0 until node.childCount) {
+      if (node.childCount > 600) truncated = true
+      for (index in 0 until minOf(node.childCount, 600)) {
         val child = node.getChild(index) ?: continue
         try {
-          visit(child)
+          visit(child, depth + 1)
         } finally {
           child.recycle()
         }
@@ -500,10 +526,12 @@ class PopMoveAccessibilityService : AccessibilityService() {
       exactMarkerBounds.isNotEmpty() -> exactMarkerBounds.minByOrNull { it.width() * it.height() }
       else -> unionBounds(markerWordBounds)
     }
-    val markerVisible = phraseIsVisible && bounds != null && !bounds.isEmpty
+    val markerVisible = !truncated && phraseIsVisible && bounds != null && !bounds.isEmpty
     val stableText = allTexts.distinct().sorted().joinToString("|")
     return ScreenSnapshot(
       markerVisible = markerVisible,
+      anyOfferVisible = !truncated && statusTexts.joinToString(" ").contains(marker),
+      idleVisible = !truncated && statusTexts.joinToString(" ").contains(RideSessionPolicy.IDLE_MARKER),
       markerCenterX = bounds?.exactCenterX(),
       markerCenterY = bounds?.exactCenterY(),
       fingerprint = sha256(stableText),
@@ -772,10 +800,6 @@ class PopMoveAccessibilityService : AccessibilityService() {
     private const val MAX_SCROLL_ATTEMPTS = 3
     private const val MIN_SCROLL_INTERVAL_MS = 140L
     private const val AFTER_SCROLL_SCAN_DELAY_MS = 45L
-    private const val SCROLL_DURATION_MS = 120L
-    private const val VERTICAL_SCROLL_X = 0.72f
-    private const val VERTICAL_SCROLL_START_Y = 0.78f
-    private const val VERTICAL_SCROLL_END_Y = 0.20f
     private const val SAFE_TOP_RATIO = 0.04f
     private const val SAFE_BOTTOM_RATIO = 0.88f
     private const val MIN_SAFE_WIDTH_DP = 120

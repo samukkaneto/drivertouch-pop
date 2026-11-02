@@ -5,7 +5,9 @@ export type NativeServiceStatus = {
   diagnosticMode: boolean;
   inputMethod: "control" | "gesture";
   armed: boolean;
-  singlePaused: boolean;
+  tripState: "unknown" | "ready" | "awaiting_trip" | "busy";
+  rideMode: "single" | "continuous";
+  serviceConnected: boolean;
   lastNativeEvent: string | null;
   notificationListenerEnabled: boolean;
   recentOfferNotification: boolean;
@@ -32,7 +34,6 @@ declare class SafeAcceptBridgeModule extends NativeModule {
     acceptMarker: string,
   ): Promise<boolean>;
   updateBehavior(rideMode: string, touchRadius: number): Promise<boolean>;
-  resumeSingleRide(): Promise<boolean>;
   getStatus(): Promise<NativeServiceStatus>;
   getEvents(): Promise<NativeEventRecord[]>;
   clearEvents(): Promise<boolean>;
@@ -42,14 +43,11 @@ declare class SafeAcceptBridgeModule extends NativeModule {
     y: number;
     updatedAt: number;
   } | null>;
-  disableNow(): Promise<boolean>;
-  beginDiagnostics(): Promise<boolean>;
-  endDiagnostics(): Promise<boolean>;
-  setInputMethod(method: "control" | "gesture"): Promise<boolean>;
-  startSingleControlTest(
-    x: number,
-    y: number,
-  ): Promise<{ started: boolean; reason: string }>;
+  clearDiagnosticReport(): Promise<boolean>;
+  setAutomationEnabled(
+    enabled: boolean,
+    rideMode: "single" | "continuous",
+  ): Promise<{ enabled: boolean; reason: string }>;
   getDiagnostics(): Promise<string>;
   recordDiagnosticObservation(
     result: "appeared" | "not_observed",

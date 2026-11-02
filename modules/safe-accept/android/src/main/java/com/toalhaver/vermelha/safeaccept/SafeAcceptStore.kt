@@ -16,7 +16,7 @@ data class SafeAcceptConfig(
   val acceptMarker: String,
   val rideMode: String,
   val touchRadius: Float,
-  val singlePaused: Boolean,
+  val tripState: String,
   val inputMethod: String
 )
 
@@ -30,8 +30,7 @@ object SafeAcceptStore {
   private const val KEY_RIDE_MODE = "ride_mode"
   private const val KEY_TOUCH_RADIUS = "touch_radius"
   private const val KEY_SINGLE_IDENTITY = "single_identity"
-  private const val KEY_ARMED = "armed"
-  private const val KEY_MODE = "mode"
+  private const val KEY_ENABLED = "automation_enabled_v4"
   private const val KEY_X = "x"
   private const val KEY_Y = "y"
   private const val KEY_DURATION = "duration"
@@ -59,17 +58,16 @@ object SafeAcceptStore {
 
   fun load(context: Context): SafeAcceptConfig {
     val preferences = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+    migrateActivation(preferences)
     migrateSpeedProfile(preferences)
     migrateMonotonicLearning(preferences)
     val x = preferences.getFloat(KEY_X, -1f)
     val y = preferences.getFloat(KEY_Y, -1f)
-    val storedMode = preferences.getString(KEY_MODE, "assist") ?: "assist"
-    val mode = DiagnosticPolicy.effectiveMode(storedMode, DiagnosticStore.isEnabled(context))
-    val hasCalibration = x in 0f..1f && y in 0f..1f
-    val rideMode = preferences.getString(KEY_RIDE_MODE, "continuous") ?: "continuous"
-    val singlePaused = rideMode == "single" && preferences.contains(KEY_SINGLE_IDENTITY)
+    val enabled = preferences.getBoolean(KEY_ENABLED, false)
+    val mode = if (enabled) "assist" else "off"
+    val rideMode = preferences.getString(KEY_RIDE_MODE, "single") ?: "single"
     return SafeAcceptConfig(
-      armed = mode == "assist" && hasCalibration && !singlePaused,
+      armed = enabled,
       mode = mode,
       x = x,
       y = y,
@@ -84,55 +82,45 @@ object SafeAcceptStore {
         ?: "pressione e segure para atender",
       rideMode = rideMode,
       touchRadius = preferences.getFloat(KEY_TOUCH_RADIUS, 0.04f).coerceIn(0.01f, 0.12f),
-      singlePaused = singlePaused,
-      inputMethod = preferences.getString("input_method", "control") ?: "control"
+      tripState = RideSessionStore.load(context).phase,
+      inputMethod = "control"
     )
   }
 
   fun saveBehavior(context: Context, rideMode: String, radius: Double) {
     context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
-      .putString(KEY_RIDE_MODE, if (rideMode == "single") "single" else "continuous")
+      .putString(KEY_RIDE_MODE, if (rideMode == "continuous") "continuous" else "single")
       .putFloat(KEY_TOUCH_RADIUS, (if (radius.isFinite()) radius else 0.04).coerceIn(0.01, 0.12).toFloat())
       .apply()
   }
 
-  fun setInputMethod(context: Context, method: String) {
-    require(method in listOf("control", "gesture"))
-    disable(context)
-    context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
-      .putString("input_method", method).commit()
+  private fun migrateActivation(preferences: android.content.SharedPreferences) {
+    if (preferences.contains(KEY_ENABLED)) return
+    preferences.edit().putBoolean(KEY_ENABLED, false).putString(KEY_RIDE_MODE, "single")
+      .putString("input_method", "control").remove(KEY_SINGLE_IDENTITY).commit()
   }
 
-  fun armSingleControlTest(context: Context, x: Double, y: Double) {
-    require(x.isFinite() && y.isFinite() && x in 0.0..1.0 && y in 0.0..1.0)
-    context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
-      .putBoolean(KEY_ARMED, true).putString(KEY_MODE, "assist")
-      .putString("input_method", "control").putString(KEY_RIDE_MODE, "single")
-      .putFloat(KEY_X, x.toFloat()).putFloat(KEY_Y, y.toFloat())
-      .remove(KEY_SINGLE_IDENTITY).remove(KEY_HANDLED_OFFER_IDENTITY).remove(KEY_HANDLED_OFFER_AT)
-      .commit()
-    record(context, "system", "Teste de uma oferta solicitado; comando do cartão selecionado")
+  fun setAutomationEnabled(context: Context, enabled: Boolean, rideMode: String) {
+    val p = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+    migrateActivation(p)
+    if (p.getBoolean(KEY_ENABLED, false) != enabled) RideSessionStore.invalidateAvailability(context)
+    p.edit().putBoolean(KEY_ENABLED, enabled).putString("input_method", "control")
+      .putString(KEY_RIDE_MODE, if (rideMode == "continuous") "continuous" else "single").commit()
+    record(context, "system", if (enabled) "Ligado pelo painel" else "Desligado pelo painel")
   }
 
   fun canDispatch(context: Context, identity: String, retry: Boolean): Boolean {
     val config = load(context)
-    val consumed = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-      .getString(KEY_SINGLE_IDENTITY, null)
-    return config.mode != "off" && config.x in 0f..1f && config.y in 0f..1f &&
-      RidePolicy.allows(config.rideMode, consumed, identity, retry)
+    return config.armed && RideSessionPolicy.mayAccept(config.rideMode, RideSessionStore.load(context))
   }
 
-  fun consumeSingleRide(context: Context, identity: String) {
-    if (load(context).rideMode != "single" || load(context).singlePaused) return
-    context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
-      .putString(KEY_SINGLE_IDENTITY, identity).commit()
-    record(context, "system", "Uma corrida: oferta processada; pausa até liberar a próxima no painel")
+  fun recordAcceptanceAttempt(context: Context, identity: String) {
+    RideSessionStore.afterAttempt(context)
   }
 
-  fun resumeSingleRide(context: Context) {
+  fun clearHandledOffer(context: Context) {
     context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
-      .remove(KEY_SINGLE_IDENTITY).apply()
-    record(context, "system", "Próxima corrida liberada pelo usuário")
+      .remove(KEY_HANDLED_OFFER_IDENTITY).remove(KEY_HANDLED_OFFER_AT).apply()
   }
 
   fun save(
@@ -145,8 +133,8 @@ object SafeAcceptStore {
     detectionDelayMs: Int,
     acceptMarker: String
   ) {
-    val safeMode = if (mode == "off") "off" else "assist"
     val preferences = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+    migrateActivation(preferences)
     migrateSpeedProfile(preferences)
     migrateMonotonicLearning(preferences)
     val safeDuration = longPressDurationMs.coerceIn(500, MAX_DURATION_MS.toInt()).toLong()
@@ -155,10 +143,8 @@ object SafeAcceptStore {
       .coerceIn(500L, MAX_DURATION_MS)
     val lockedDuration = minOf(currentLearnedDuration, safeDuration)
     val editor = preferences.edit()
-      .putBoolean(KEY_ARMED, armed && safeMode == "assist")
-      .putString(KEY_MODE, safeMode)
-      .putFloat(KEY_X, x.coerceIn(0.0, 1.0).toFloat())
-      .putFloat(KEY_Y, y.coerceIn(0.0, 1.0).toFloat())
+      .putFloat(KEY_X, (if (x.isFinite() && x in 0.0..1.0) x else -1.0).toFloat())
+      .putFloat(KEY_Y, (if (y.isFinite() && y in 0.0..1.0) y else -1.0).toFloat())
       .putLong(KEY_DURATION, safeDuration)
       .putLong(KEY_DELAY, detectionDelayMs.coerceIn(0, 3000).toLong())
       .putString(KEY_MARKER, acceptMarker.trim().lowercase(Locale.ROOT).take(80))
@@ -236,11 +222,7 @@ object SafeAcceptStore {
   }
 
   fun disable(context: Context) {
-    context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
-      .putBoolean(KEY_ARMED, false)
-      .putString(KEY_MODE, "off")
-      .apply()
-    record(context, "system", "Automação desarmada pelo painel")
+    setAutomationEnabled(context, false, load(context).rideMode)
   }
 
   @Synchronized
@@ -329,6 +311,7 @@ object SafeAcceptStore {
   fun markOfferNotification(context: Context, fingerprint: String): Boolean {
     val preferences = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
     val now = System.currentTimeMillis()
+    if (preferences.getString("completed_notification", null) == fingerprint && now - preferences.getLong("completed_notification_at", 0L) < 120_000L) return false
     val previousFingerprint = preferences.getString(KEY_OFFER_NOTIFICATION_FINGERPRINT, null)
     val previousAt = preferences.getLong(KEY_OFFER_NOTIFICATION_AT, 0L)
     if (previousFingerprint == fingerprint && now - previousAt < 120_000L) return false
@@ -358,7 +341,7 @@ object SafeAcceptStore {
   fun completeOfferNotification(context: Context, fingerprint: String) {
     val preferences = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
     if (preferences.getString(KEY_OFFER_NOTIFICATION_FINGERPRINT, null) != fingerprint) return
-    preferences.edit()
+    preferences.edit().putString("completed_notification", fingerprint).putLong("completed_notification_at", System.currentTimeMillis())
       .remove(KEY_OFFER_NOTIFICATION_FINGERPRINT)
       .remove(KEY_OFFER_NOTIFICATION_AT)
       .apply()

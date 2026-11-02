@@ -78,14 +78,15 @@ export default function PermissionsScreen() {
             <Text style={styles.numberText}>3</Text>
           </View>
           <Text style={styles.stepText}>
-            Habilite o serviço e retorne para confirmar o estado nesta tela.
+            Habilite o serviço e retorne ao painel para ligar a chave do
+            aplicativo.
           </Text>
         </View>
         <View style={styles.info}>
           <MaterialIcons name="touch-app" color="#155EEF" size={18} />
           <Text style={styles.infoText}>
-            Com o serviço habilitado e a execução ativa, o Toalha Vermelha segura o
-            cartão quando encontra “PRESSIONE E SEGURE PARA ATENDER”.
+            Com o serviço habilitado e a execução ativa, o Toalha Vermelha
+            segura o cartão quando encontra “PRESSIONE E SEGURE PARA ATENDER”.
           </Text>
         </View>
       </SectionCard>
@@ -110,8 +111,8 @@ export default function PermissionsScreen() {
       <SectionCard title="Desligamento completo">
         <Text style={styles.stepText}>
           Use a mesma tela do Android para desabilitar totalmente o serviço. O
-          botão de desligar no painel interrompe os gestos, mas preserva a
-          permissão para o próximo uso.
+          controle Ligado/Desligado no painel interrompe os gestos, mas preserva
+          a permissão para o próximo uso.
         </Text>
       </SectionCard>
       <ActionButton

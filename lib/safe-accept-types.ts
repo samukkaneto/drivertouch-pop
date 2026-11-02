@@ -24,7 +24,7 @@ export type NativeEventRecord = {
 };
 
 export type SafeAcceptSettings = {
-  schemaVersion: 5;
+  schemaVersion: 6;
   rideMode: RideMode;
   touchRadius: number;
   appTarget: "popmove";
@@ -38,11 +38,11 @@ export type SafeAcceptSettings = {
 };
 
 export const DEFAULT_SETTINGS: SafeAcceptSettings = {
-  schemaVersion: 5,
-  rideMode: "continuous",
+  schemaVersion: 6,
+  rideMode: "single",
   touchRadius: 0.04,
   appTarget: "popmove",
-  mode: "assist",
+  mode: "off",
   isArmed: false,
   longPressDurationMs: 1600,
   detectionDelayMs: 0,
@@ -124,7 +124,11 @@ function sanitizeEvents(value: unknown): EventRecord[] {
 export function sanitizeSettings(value: unknown): SafeAcceptSettings {
   if (!value || typeof value !== "object") return DEFAULT_SETTINGS;
   const candidate = value as Partial<SafeAcceptSettings>;
-  const mode: AssistMode = candidate.mode === "off" ? "off" : "assist";
+  const enabled =
+    Number(candidate.schemaVersion ?? 0) >= 6 &&
+    candidate.mode === "assist" &&
+    candidate.isArmed === true;
+  const mode: AssistMode = enabled ? "assist" : "off";
   const calibration = sanitizeCalibration(candidate.calibration);
   const usesLegacyTiming =
     Number(candidate.schemaVersion ?? 0) < 4 &&
@@ -132,12 +136,16 @@ export function sanitizeSettings(value: unknown): SafeAcceptSettings {
     candidate.detectionDelayMs === 400;
 
   return {
-    schemaVersion: 5,
-    rideMode: candidate.rideMode === "single" ? "single" : "continuous",
+    schemaVersion: 6,
+    rideMode:
+      Number(candidate.schemaVersion ?? 0) >= 6 &&
+      candidate.rideMode === "continuous"
+        ? "continuous"
+        : "single",
     touchRadius: numberInRange(candidate.touchRadius, 0.01, 0.12, 0.04),
     appTarget: "popmove",
     mode,
-    isArmed: Boolean(calibration && mode === "assist"),
+    isArmed: enabled,
     longPressDurationMs: numberInRange(
       usesLegacyTiming
         ? DEFAULT_SETTINGS.longPressDurationMs

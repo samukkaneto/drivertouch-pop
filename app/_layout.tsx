@@ -9,7 +9,7 @@ export default function RootLayout() {
         <Stack.Screen name="(tabs)" />
         <Stack.Screen
           name="diagnostico"
-          options={{ headerShown: true, title: "Diagnóstico" }}
+          options={{ headerShown: true, title: "Relatório" }}
         />
       </Stack>
     </SafeAcceptProvider>

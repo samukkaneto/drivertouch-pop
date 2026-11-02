@@ -32,7 +32,6 @@ class PopMoveNotificationListenerService : NotificationListenerService() {
 
     val candidate = OFFER_MARKERS.any(searchable::contains)
     DiagnosticStore.observeNotification(this, sbn, candidate)
-    if (DiagnosticStore.isEnabled(this)) return
     if (!candidate) return
 
     val stableNotificationText = searchable.replace(COUNTDOWN_PATTERN, "").trim()
@@ -42,6 +41,11 @@ class PopMoveNotificationListenerService : NotificationListenerService() {
     val config = SafeAcceptStore.load(this)
     if (!config.armed || config.mode == "off") {
       SafeAcceptStore.record(this, "system", "Nova viagem detectada; execução automática está desligada")
+      return
+    }
+
+    if (config.rideMode == "single" && !RideSessionPolicy.mayAccept(config.rideMode, RideSessionStore.load(this))) {
+      SafeAcceptStore.record(this, "notification", "Uma por vez: oferta recebida enquanto aguarda disponibilidade; execução permanece ligada")
       return
     }
 

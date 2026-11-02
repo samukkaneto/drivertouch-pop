@@ -137,8 +137,8 @@ export default function CalibrationScreen() {
       <SectionCard title="Guia visual da calibração">
         <Text style={styles.helper}>
           O círculo abaixo é apenas uma referência visual para posicionar a
-          frase. O gesto automático usa o centro do texto de aceite detectado na
-          tela; este raio não altera o ponto nem o movimento do toque.
+          frase. O aceite atual usa o comando disponível no cartão. Salvar a
+          referência mantém o estado da chave do painel.
         </Text>
         <View style={styles.inputRow}>
           {[0.02, 0.04, 0.08].map((radius) => (

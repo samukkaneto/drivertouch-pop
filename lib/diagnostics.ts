@@ -1,3 +1,5 @@
+import { automationStatus } from "./automation-status";
+
 export type DiagnosticState = {
   diagnosticMode: boolean;
   automationArmed: boolean;
@@ -6,6 +8,8 @@ export type DiagnosticState = {
   notificationGranted: boolean;
   notificationConnected: boolean;
   inputMethod?: "control" | "gesture";
+  rideMode?: "single" | "continuous";
+  tripState?: "unknown" | "ready" | "awaiting_trip" | "busy";
 };
 
 export type DiagnosticAction = {
@@ -41,7 +45,7 @@ export type CardSample = {
 };
 
 export type DiagnosticSnapshot = {
-  schema: 1 | 2 | 3;
+  schema: 1 | 2 | 3 | 4;
   appVersion: string;
   popMoveVersion: string;
   device: string;
@@ -74,7 +78,7 @@ export type DiagnosticSnapshot = {
 
 export function cardConclusion(card?: CardSample | null): string {
   if (!card)
-    return "Nenhum cartão foi analisado pelo novo método. Use Iniciar teste de uma oferta nesta tela e aguarde uma oferta visível no PopMove.";
+    return "Nenhum cartão analisado neste relatório. A ativação é controlada pela chave no painel.";
   if (card.performed === true)
     return "O controle respondeu ao comando. Isso não confirma aceite da corrida nem ausência de aviso; registre o que aconteceu no PopMove.";
   if (card.performed === false)
@@ -99,6 +103,15 @@ export function controlTestStatus(s: DiagnosticSnapshot): {
   detail: string;
   active: boolean;
 } {
+  if (s.schema >= 4) {
+    const summary = automationStatus({
+      armed: s.state.automationArmed,
+      serviceConnected: s.state.accessibilityConnected,
+      rideMode: s.state.rideMode ?? "single",
+      tripState: s.state.tripState ?? "unknown",
+    });
+    return { ...summary, active: s.state.automationArmed };
+  }
   const currentCard =
     s.lastCard && (!s.controlTest || s.lastCard.at >= s.controlTest.startedAt)
       ? s.lastCard
@@ -116,14 +129,14 @@ export function controlTestStatus(s: DiagnosticSnapshot): {
     return {
       title: "Teste pausado — nenhuma tentativa em andamento",
       detail:
-        "A execução está desativada. Sem tentar o comando, esta etapa não avalia o aviso na execução. Toque em Iniciar teste de uma oferta.",
+        "A execução está desativada. Sem tentar o comando, esta etapa não avalia o aviso na execução. A ativação fica no painel.",
       active: false,
     };
   if (s.state.inputMethod !== "control")
     return {
       title: "Outro método selecionado",
       detail:
-        "Iniciar teste de uma oferta seleciona Comando do cartão e Uma corrida.",
+        "O método registrado nesta amostra antiga é diferente do comando do cartão.",
       active: false,
     };
   if (!s.state.accessibilityGranted || !s.state.accessibilityConnected)
@@ -171,7 +184,7 @@ const yesNo = (value: boolean) => (value ? "sim" : "não");
 const at = (value: number) =>
   value ? new Date(value).toISOString() : "não iniciado";
 const stateLine = (s: DiagnosticState) =>
-  `Diagnóstico: ${yesNo(s.diagnosticMode)}; execução armada: ${yesNo(s.automationArmed)}; método: ${s.inputMethod === "control" ? "comando do cartão" : s.inputMethod === "gesture" ? "toque anterior" : "não registrado"}; acessibilidade autorizada/conectada: ${yesNo(s.accessibilityGranted)}/${yesNo(s.accessibilityConnected)}; notificações autorizadas/conectadas: ${yesNo(s.notificationGranted)}/${yesNo(s.notificationConnected)}`;
+  `${s.rideMode ? `Chave ligada: ${yesNo(s.automationArmed)}; corridas: ${s.rideMode === "single" ? "uma por vez" : "simultâneas"}; disponibilidade: ${s.tripState ?? "unknown"}` : `Diagnóstico: ${yesNo(s.diagnosticMode)}; execução armada: ${yesNo(s.automationArmed)}`}; método: ${s.inputMethod === "control" ? "comando do cartão" : s.inputMethod === "gesture" ? "toque anterior" : "não registrado"}; acessibilidade autorizada/conectada: ${yesNo(s.accessibilityGranted)}/${yesNo(s.accessibilityConnected)}; notificações autorizadas/conectadas: ${yesNo(s.notificationGranted)}/${yesNo(s.notificationConnected)}`;
 
 export function formatDiagnosticReport(s: DiagnosticSnapshot): string {
   const testStatus = controlTestStatus(s);
@@ -196,8 +209,8 @@ export function formatDiagnosticReport(s: DiagnosticSnapshot): string {
     `Aparelho: ${s.device}; Android ${s.androidVersion} (API ${s.sdk}); PopMove ${s.popMoveVersion}`,
     `Início: ${at(s.startedAt)}; relatório: ${at(s.generatedAt)}. Horários em UTC.`,
     stateLine(s.state),
-    `Estado do teste: ${testStatus.title}. ${testStatus.detail}`,
-    ...(s.controlTest
+    `Estado da execução: ${testStatus.title}. ${testStatus.detail}`,
+    ...(s.schema < 4 && s.controlTest
       ? [
           `Teste iniciado explicitamente: ${at(s.controlTest.startedAt)}; comandos do cartão desde o início: ${Math.max(0, (s.longClickCount ?? 0) - s.controlTest.commandCountAtStart)}`,
         ]
@@ -215,7 +228,7 @@ export function formatDiagnosticReport(s: DiagnosticSnapshot): string {
     ...s.commands.map(
       (c) => `${at(c.at)}: ${c.kind}; envio concluído: ${yesNo(c.dispatched)}`,
     ),
-    `Teste do cartão: ${cardConclusion(s.lastCard)}`,
+    `Último comando do cartão: ${cardConclusion(s.lastCard)}`,
     ...(s.lastCard ? [cardLine(s.lastCard)] : []),
     "Observações informadas pelo usuário ao retornar ao aplicativo (não são detecção automática do aviso):",
     ...(s.observations.length

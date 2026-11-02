@@ -4,17 +4,6 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class DiagnosticPolicyTest {
-  @Test fun diagnosisBlocksRestoredAndRearmedModes() {
-    listOf(null, "assist", "off", "test", "unexpected").forEach {
-      assertEquals("off", DiagnosticPolicy.effectiveMode(it, true))
-    }
-  }
-
-  @Test fun leavingDiagnosisDoesNotOverrideExplicitOff() {
-    assertEquals("off", DiagnosticPolicy.effectiveMode("off", false))
-    assertEquals("assist", DiagnosticPolicy.effectiveMode("assist", false))
-  }
-
   @Test fun onlyKnownLabelsProduceAnAcceptanceCandidate() {
     assertEquals("possible_accept", DiagnosticPolicy.actionCategory(" ACEITAR   CORRIDA "))
     assertEquals("possible_accept", DiagnosticPolicy.actionCategory("Atender"))

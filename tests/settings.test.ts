@@ -3,9 +3,10 @@ import { describe, expect, it } from "vitest";
 import { DEFAULT_SETTINGS, sanitizeSettings } from "../lib/safe-accept-types";
 
 describe("settings migration and safety", () => {
-  it("never restores an armed state without valid calibration", () => {
+  it("does not start legacy automation merely because it was previously configured", () => {
     const settings = sanitizeSettings({
       ...DEFAULT_SETTINGS,
+      schemaVersion: 5,
       mode: "assist",
       isArmed: true,
       calibration: null,
@@ -43,7 +44,7 @@ describe("settings migration and safety", () => {
     ]);
   });
 
-  it("migrates a calibrated legacy test configuration to real execution", () => {
+  it("keeps a legacy calibrated test paused until the single native switch is used", () => {
     const settings = sanitizeSettings({
       mode: "test",
       isArmed: false,
@@ -54,8 +55,8 @@ describe("settings migration and safety", () => {
       },
     });
 
-    expect(settings.mode).toBe("assist");
-    expect(settings.isArmed).toBe(true);
+    expect(settings.mode).toBe("off");
+    expect(settings.isArmed).toBe(false);
   });
 
   it("migrates the slow legacy timing to the immediate adaptive profile", () => {
@@ -65,7 +66,7 @@ describe("settings migration and safety", () => {
       detectionDelayMs: 400,
     });
 
-    expect(settings.schemaVersion).toBe(5);
+    expect(settings.schemaVersion).toBe(6);
     expect(settings.longPressDurationMs).toBe(1600);
     expect(settings.detectionDelayMs).toBe(0);
   });
@@ -78,15 +79,18 @@ describe("settings migration and safety", () => {
 });
 
 describe("ride mode and touch area", () => {
-  it("preserves existing continuous behavior and supplies a radius on upgrade", () => {
+  it("defaults the clarified ride mode to one at a time on upgrade", () => {
     const settings = sanitizeSettings({ schemaVersion: 4 });
-    expect(settings.rideMode).toBe("continuous");
+    expect(settings.rideMode).toBe("single");
     expect(settings.touchRadius).toBe(0.04);
   });
   it("keeps the selected mode and constrains malformed radii", () => {
     expect(
       sanitizeSettings({ rideMode: "single", touchRadius: 0.08 }).rideMode,
     ).toBe("single");
+    expect(
+      sanitizeSettings({ schemaVersion: 6, rideMode: "continuous" }).rideMode,
+    ).toBe("continuous");
     expect(sanitizeSettings({ touchRadius: Infinity }).touchRadius).toBe(0.04);
     expect(sanitizeSettings({ touchRadius: -1 }).touchRadius).toBe(0.01);
     expect(sanitizeSettings({ touchRadius: 100 }).touchRadius).toBe(0.12);
