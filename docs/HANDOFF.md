@@ -1,6 +1,17 @@
 # Continuidade do projeto
 
-> Estado atualizado em 31/10/2026. Leia primeiro [`PROJECT_STATUS.md`](PROJECT_STATUS.md), que é o relatório mestre e a fonte de verdade para retomada.
+> Estado atualizado em 02/11/2026. Leia primeiro [`PROJECT_STATUS.md`](PROJECT_STATUS.md), que é o relatório mestre e a fonte de verdade para retomada.
+
+## Entrega verificada — 0.14.0
+
+- APK desta atualização: https://github.com/samukkaneto/drivertouch-pop/releases/download/v0.14.0/Toalha-Vermelha-0.14.0.apk
+- Build e publicação aprovados: https://github.com/samukkaneto/drivertouch-pop/actions/runs/41435830603
+- Commit compilado: `78fb1aee4eb15b4729c86ceb6619b37fd4c9c8b5`; branch `codex/chave-unica-0.14.0`.
+- Tamanho: 59.598.492 bytes. SHA-256: `d5e19eb30a66ed5fd5381c0fe2eebf60292782cd73cfd2e91f6777f113c78617`.
+- Pacote `com.toalhaver.vermelha`, versionName 0.14.0, versionCode 16. Assinatura v2 verificada; certificado SHA-256 `fac61745dc0903786fb9ede62a962b399f7348f0bb6f899b8332667591033b9c`, igual ao da 0.13.2. Atualização por cima compatível.
+- TypeScript, ESLint, 30 testes Vitest, testes Kotlin/JUnit e compilação Android aprovados. ZIP e APK baixados e conferidos pelos respectivos SHA-256.
+- Uso: instalar por cima, manter **Uma por vez**, ligar a única chave e abrir o PopMove na tela **Aguarde uma solicitação**. A chave permanece ligada durante a corrida e aguarda essa tela voltar para liberar outra oferta.
+- Retomada automática e rolagem simultânea ainda precisam de validação no Moto G84. Testes automatizados não demonstram ausência de aviso do PopMove; foi preservado o comando que o proprietário confirmou funcionar na 0.13.2.
 
 ## Atualização 0.14.0 — chave única e uma corrida por vez
 
@@ -14,9 +25,11 @@ Atualizado em 02/11/2026.
 - Na primeira ativação/reconexão, se a disponibilidade não puder ser confirmada, aguarda a tela de espera. Esse comportamento é conservador: um cartão ativo anterior à ativação não é presumido como ausência de corrida. O reconhecimento da volta à tela de espera precisa ser validado no Moto G84.
 - Uma por vez não abre novas ofertas enquanto aguarda disponibilidade nem faz rolagem. Simultâneas mantém o mesmo aceite e pode procurar a nova oferta com até três curvas de rolagem; pontos dentro da área útil e duração de 320–520 ms. A curva não garante ausência de aviso.
 - Branch `codex/chave-unica-0.14.0`, pacote `com.toalhaver.vermelha`, versão 0.14.0 / código 16. Relatório v4 registra chave, modo e estado da disponibilidade, sem botões de ativação.
-- Testes cobrem ciclos de corridas, bloqueio de oferta enquanto ocupado, retorno automático somente na tela livre, modo simultâneo e limites das curvas. Conferir entrega verificada e APK após o workflow.
+- Testes cobrem ciclos de corridas, bloqueio de oferta enquanto ocupado, retorno automático somente na tela livre, modo simultâneo e limites das curvas. Entrega verificada e APK na seção acima.
 
-## Entrega verificada — 0.13.2
+## Histórico da entrega — 0.13.2
+
+Registro da entrega anterior. O proprietário confirmou posteriormente o aceite sem aviso; o uso atual está na seção 0.14.0 acima.
 
 - APK atual entregue: https://github.com/samukkaneto/drivertouch-pop/releases/download/v0.13.2/Toalha-Vermelha-0.13.2-teste-direto.apk
 - Build e publicação aprovados: https://github.com/samukkaneto/drivertouch-pop/actions/runs/41220404044
