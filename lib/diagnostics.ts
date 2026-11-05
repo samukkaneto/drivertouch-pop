@@ -44,8 +44,17 @@ export type CardSample = {
   performed?: boolean;
 };
 
+type ForegroundSample = {
+  at: number;
+  stage: string;
+  requests: number;
+  windowConfirmed: boolean;
+  route: "notification" | "launcher" | null;
+  elapsedMs: number;
+};
+
 export type DiagnosticSnapshot = {
-  schema: 1 | 2 | 3 | 4;
+  schema: 1 | 2 | 3 | 4 | 5;
   appVersion: string;
   popMoveVersion: string;
   device: string;
@@ -60,6 +69,7 @@ export type DiagnosticSnapshot = {
   lastOffer: NotificationSample | null;
   notificationHistory?: NotificationSample[];
   lastCard?: CardSample | null;
+  lastForeground?: ForegroundSample | null;
   controlTest?: { startedAt: number; commandCountAtStart: number } | null;
   pressCount: number;
   longClickCount?: number;
@@ -183,6 +193,32 @@ export function diagnosticConclusion(snapshot: DiagnosticSnapshot): string {
 const yesNo = (value: boolean) => (value ? "sim" : "não");
 const at = (value: number) =>
   value ? new Date(value).toISOString() : "não iniciado";
+const foregroundLabels: Record<string, string> = {
+  disabled: "chave desligada",
+  locked: "tela desligada ou bloqueada",
+  calibration: "calibração em andamento",
+  not_available: "aguardando disponibilidade em Uma por vez",
+  accessibility_disconnected: "Acessibilidade desconectada",
+  open_requested: "abertura solicitada",
+  open_failed: "falha ao enviar a solicitação de abertura",
+  window_confirmed: "janela encontrada; verificando o cartão",
+  window_timeout: "janela do PopMove não confirmada",
+  card_timeout: "janela encontrada; nenhum comando do cartão enviado durante a verificação",
+  command_sent: "comando do cartão enviado; confirme o aceite no PopMove",
+  command_refused: "o controle não confirmou o comando",
+  interrupted: "verificação interrompida",
+};
+
+function foregroundLines(sample?: ForegroundSample | null): string[] {
+  if (!sample) return [];
+  const route = sample.route === "notification" ? "notificação" :
+    sample.route === "launcher" ? "ícone do aplicativo" : "nenhuma";
+  return [
+    `Último fluxo de abertura: ${at(sample.at)}; ${foregroundLabels[sample.stage] ?? "resultado não identificado"}`,
+    `Solicitações: ${sample.requests}; última rota: ${route}; janela confirmada: ${yesNo(sample.windowConfirmed)}; tempo: ${sample.elapsedMs} ms`,
+  ];
+}
+
 const stateLine = (s: DiagnosticState) =>
   `${s.rideMode ? `Chave ligada: ${yesNo(s.automationArmed)}; corridas: ${s.rideMode === "single" ? "uma por vez" : "simultâneas"}; disponibilidade: ${s.tripState ?? "unknown"}` : `Diagnóstico: ${yesNo(s.diagnosticMode)}; execução armada: ${yesNo(s.automationArmed)}`}; método: ${s.inputMethod === "control" ? "comando do cartão" : s.inputMethod === "gesture" ? "toque anterior" : "não registrado"}; acessibilidade autorizada/conectada: ${yesNo(s.accessibilityGranted)}/${yesNo(s.accessibilityConnected)}; notificações autorizadas/conectadas: ${yesNo(s.notificationGranted)}/${yesNo(s.notificationConnected)}`;
 
@@ -217,6 +253,7 @@ export function formatDiagnosticReport(s: DiagnosticSnapshot): string {
       : []),
     `Eventos de notificação: ${s.notificationEvents}; com frase de oferta: ${s.offerEvents}. Incluem atualizações da mesma oferta.`,
     ...sampleLines("Última oferta", s.lastOffer),
+    ...foregroundLines(s.lastForeground),
     ...sampleLines("Última notificação do PopMove", s.lastNotification),
     "Histórico de notificações (até 20 atualizações, mais recente primeiro):",
     ...(s.notificationHistory?.length

@@ -325,10 +325,10 @@ object SafeAcceptStore {
     return true
   }
 
-  fun recentOfferNotification(context: Context, maxAgeMs: Long = 90_000L): Boolean {
+  fun recentOfferNotification(context: Context, maxAgeMs: Long = OfferForegroundPolicy.HANDOFF_TIMEOUT_MS): Boolean {
     val preferences = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
     val at = preferences.getLong(KEY_OFFER_NOTIFICATION_AT, 0L)
-    return at > 0L && System.currentTimeMillis() - at <= maxAgeMs
+    return at > 0L && System.currentTimeMillis() - at in 0L..maxAgeMs
   }
 
   fun currentOfferNotificationFingerprint(context: Context): String? {
@@ -351,15 +351,19 @@ object SafeAcceptStore {
   fun claimOfferIdentity(context: Context, identity: String): Boolean {
     val preferences = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
     val now = System.currentTimeMillis()
-    val previousIdentity = preferences.getString(KEY_HANDLED_OFFER_IDENTITY, null)
-    val previousAt = preferences.getLong(KEY_HANDLED_OFFER_AT, 0L)
-    if (previousIdentity == identity && now - previousAt < 120_000L) return false
+    if (wasOfferHandled(context, identity, now)) return false
 
     preferences.edit()
       .putString(KEY_HANDLED_OFFER_IDENTITY, identity.take(160))
       .putLong(KEY_HANDLED_OFFER_AT, now)
       .commit()
     return true
+  }
+
+  fun wasOfferHandled(context: Context, identity: String, now: Long = System.currentTimeMillis()): Boolean {
+    val preferences = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+    return preferences.getString(KEY_HANDLED_OFFER_IDENTITY, null) == identity &&
+      now - preferences.getLong(KEY_HANDLED_OFFER_AT, 0L) in 0L until 120_000L
   }
 
   @Synchronized

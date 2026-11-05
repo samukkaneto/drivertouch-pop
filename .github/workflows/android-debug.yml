@@ -5,7 +5,7 @@ on:
   push:
     branches:
       - main
-      - codex/chave-unica-0.14.0
+      - codex/abertura-ofertas-0.14.1
 
 permissions:
   contents: read
@@ -76,16 +76,16 @@ jobs:
       - name: Stage verified APK for delivery
         run: |
           mkdir apk-delivery
-          cp android/app/build/outputs/apk/release/app-release.apk apk-delivery/Toalha-Vermelha-0.14.0.apk
+          cp android/app/build/outputs/apk/release/app-release.apk apk-delivery/Toalha-Vermelha-0.14.1.apk
           cp apk-info.txt apk-delivery/
           cd apk-delivery
-          sha256sum Toalha-Vermelha-0.14.0.apk > apk.sha256
+          sha256sum Toalha-Vermelha-0.14.1.apk > apk.sha256
 
       - name: Make APK available as a downloadable artifact
         uses: actions/upload-artifact@v4
         continue-on-error: true
         with:
-          name: Toalha-Vermelha-0.14.0
+          name: Toalha-Vermelha-0.14.1
           path: apk-delivery/*
           retention-days: 3
           compression-level: 0
@@ -119,10 +119,10 @@ jobs:
           GH_REPO: ${{ github.repository }}
         run: |
           sha256sum --check apk.sha256
-          if gh release view v0.14.0 >/dev/null 2>&1; then
+          if gh release view v0.14.1 >/dev/null 2>&1; then
             echo "Existing release preserved."
           else
-            gh release create v0.14.0 Toalha-Vermelha-0.14.0.apk apk-info.txt apk.sha256 \
-              --target "$GITHUB_SHA" --title "Toalha Vermelha 0.14.0 — Chave única e uma por vez" --prerelease \
-              --notes "Uma chave Ligado/Desligado no painel. Uma por vez mantém o app ligado, aguarda a tela confirmada de disponibilidade e retoma sem reativação manual. Simultâneas permanece opcional, com rolagem curva limitada à área útil. Preserva o comando do cartão validado pelo proprietário. Relatório somente observacional. Migração começa desligada com Uma por vez selecionado. Novos comportamentos ainda precisam de validação no aparelho."
+            gh release create v0.14.1 Toalha-Vermelha-0.14.1.apk apk-info.txt apk.sha256 \
+              --target "$GITHUB_SHA" --title "Toalha Vermelha 0.14.1 — Abertura do PopMove" --prerelease \
+              --notes "Confirma a janela do PopMove ao receber uma oferta com outro aplicativo aberto. Usa uma segunda solicitação limitada quando a janela não aparece. Aguarda o controle ficar pronto antes de marcar a oferta como tratada. Preserva o comando de aceite e o modo Uma por vez. O relatório diferencia solicitação, janela confirmada e comando enviado. Validação no Moto G84 ainda pendente."
           fi

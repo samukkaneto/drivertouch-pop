@@ -1,8 +1,20 @@
 # Continuidade do projeto
 
-> Estado atualizado em 02/11/2026. Leia primeiro [`PROJECT_STATUS.md`](PROJECT_STATUS.md), que é o relatório mestre e a fonte de verdade para retomada.
+> Estado atualizado em 05/11/2026. Leia primeiro [`PROJECT_STATUS.md`](PROJECT_STATUS.md), que é o relatório mestre e a fonte de verdade para retomada.
 
-## Entrega verificada — 0.14.0
+## Atualização 0.14.1 — abertura do PopMove a partir de outro aplicativo
+
+Atualizado em 05/11/2026.
+
+- O proprietário confirmou que a 0.14.0 já traz o PopMove ao primeiro plano e aceita em algumas ocasiões, mas relatou falhas intermitentes quando está em outro aplicativo, por exemplo no WhatsApp.
+- A 0.14.0 considerava a solicitação de abertura suficiente e deduplicava o cartão antes de seu controle estar pronto. O fluxo agora confirma a janela pela Acessibilidade e só marca o cartão como tratado no momento de enviar o comando.
+- A abertura parte do serviço de Acessibilidade conectado. Prefere o comando de abertura de atividade criado pelo PopMove; na ausência dele ou se a janela não aparecer, usa a abertura normal do aplicativo. Até duas solicitações e uma janela de verificação de 5,5 segundos. Depois de confirmar a janela, não a reabre para essa mesma oferta se o usuário sair.
+- A frase real de oferta e o controle visível e elegível continuam obrigatórios. Nenhum toque substitui o comando do cartão. Atualizações repetidas de uma notificação são agrupadas; outra notificação com texto idêntico pode iniciar seu próprio fluxo.
+- Em Uma por vez, só começa se a disponibilidade já foi confirmada. Uma breve tela intermediária após a abertura preserva esse estado por até 2,5 segundos, sem liberar estado ocupado ou desconhecido. A verificação de janela não rola a tela nesse modo.
+- O relatório v5 separa pedido de abertura, janela confirmada e comando do cartão. Não confirma aceite pelo servidor. Sem novas permissões. Pacote e configurações preservados.
+- Branch `codex/abertura-ofertas-0.14.1`, versão 0.14.1, código 17. Validar o caminho WhatsApp → PopMove com tela desbloqueada no Moto G84. Para estabelecer disponibilidade após a atualização, abrir primeiro a tela `Aguarde uma solicitação`.
+
+## Histórico da entrega — 0.14.0
 
 - APK desta atualização: https://github.com/samukkaneto/drivertouch-pop/releases/download/v0.14.0/Toalha-Vermelha-0.14.0.apk
 - Build e publicação aprovados: https://github.com/samukkaneto/drivertouch-pop/actions/runs/41435830603

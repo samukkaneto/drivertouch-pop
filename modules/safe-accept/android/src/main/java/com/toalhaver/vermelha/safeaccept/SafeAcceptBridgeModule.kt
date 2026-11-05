@@ -94,7 +94,10 @@ class SafeAcceptBridgeModule : Module() {
         enabled && !PopMoveAccessibilityService.serviceIsEnabled -> "accessibility_disconnected"
         else -> null
       }
-      if (blocker == null) SafeAcceptStore.setAutomationEnabled(context, enabled, rideMode)
+      if (blocker == null) {
+        SafeAcceptStore.setAutomationEnabled(context, enabled, rideMode)
+        if (!enabled) PopMoveAccessibilityService.stopOfferHandoff()
+      }
       mapOf("enabled" to SafeAcceptStore.load(context).armed, "reason" to (blocker ?: "updated"))
     }.runOnQueue(Queues.MAIN)
 

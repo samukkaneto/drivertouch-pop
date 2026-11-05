@@ -2,14 +2,21 @@ package com.toalhaver.vermelha.safeaccept
 
 import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.GestureDescription
+import android.app.ActivityOptions
+import android.app.KeyguardManager
+import android.app.PendingIntent
+import android.content.Context
 import android.content.Intent
 import android.graphics.Color
 import android.graphics.Path
 import android.graphics.PixelFormat
 import android.graphics.Rect
 import android.graphics.drawable.GradientDrawable
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import android.os.PowerManager
+import android.os.SystemClock
 import android.view.Gravity
 import android.view.MotionEvent
 import android.view.View
@@ -25,12 +32,17 @@ import java.text.Normalizer
 
 class PopMoveAccessibilityService : AccessibilityService() {
   private var lastGestureAt = 0L
+  private var lastControlProbeAt = -CONTROL_PROBE_INTERVAL_MS
   private val offerHandler = Handler(Looper.getMainLooper())
+  private var foregroundHandoff: ForegroundHandoff? = null
+  private val foregroundCheck = Runnable { advanceOfferHandoff() }
   private val monitorHandler = Handler(Looper.getMainLooper())
   private val monitor = object : Runnable {
     override fun run() {
       if (currentInstance !== this@PopMoveAccessibilityService) return
-      if (SafeAcceptStore.load(this@PopMoveAccessibilityService).armed) evaluateActiveWindow(allowScroll = true)
+      if (foregroundHandoff == null && SafeAcceptStore.load(this@PopMoveAccessibilityService).armed) {
+        evaluateActiveWindow(allowScroll = true)
+      }
       monitorHandler.postDelayed(this, 750L)
     }
   }
@@ -42,6 +54,13 @@ class PopMoveAccessibilityService : AccessibilityService() {
   private var exhaustedScrollFingerprint: String? = null
   private var scrollAttempts = 0
   private var lastScrollAt = 0L
+
+  private data class ForegroundHandoff(
+    val identity: String,
+    val openIntent: PendingIntent?,
+    var state: OfferForegroundPolicy.State,
+    var route: String? = null
+  )
 
   private data class ScreenSnapshot(
     val markerVisible: Boolean,
@@ -91,16 +110,19 @@ class PopMoveAccessibilityService : AccessibilityService() {
       return
     }
 
-    evaluateActiveWindow(allowScroll = true)
+    if (foregroundHandoff == null) evaluateActiveWindow(allowScroll = true)
+    else advanceOfferHandoff()
   }
 
   override fun onInterrupt() {
+    finishOfferHandoff("interrupted", "Verificação da oferta interrompida pelo Android")
     removeOverlay()
     SafeAcceptStore.record(this, "system", "Serviço interrompido pelo Android")
   }
 
   override fun onDestroy() {
     serviceIsEnabled = false
+    finishOfferHandoff("interrupted", "Acessibilidade desconectada durante a abertura")
     offerHandler.removeCallbacksAndMessages(null)
     monitorHandler.removeCallbacksAndMessages(null)
     removeOverlay()
@@ -120,7 +142,7 @@ class PopMoveAccessibilityService : AccessibilityService() {
     }
 
     val snapshot = buildScreenSnapshot(root)
-    RideSessionStore.observe(this, snapshot.idleVisible, snapshot.anyOfferVisible)
+    observeOfferScreen(snapshot)
     if (!RideSessionPolicy.mayAccept(config.rideMode, RideSessionStore.load(this))) {
       root.recycle()
       return
@@ -139,12 +161,20 @@ class PopMoveAccessibilityService : AccessibilityService() {
       return
     }
 
+    if (config.inputMethod == "control") {
+      val now = SystemClock.elapsedRealtime()
+      if (now - lastControlProbeAt < CONTROL_PROBE_INTERVAL_MS) return
+      val identity = "control:${snapshot.controlFingerprint}"
+      if (SafeAcceptStore.wasOfferHandled(this, identity)) return
+      lastControlProbeAt = now
+      dispatchControlLongClick(identity)
+      return
+    }
+
     val now = System.currentTimeMillis()
     val minimumInterval = config.longPressDurationMs + config.detectionDelayMs + 200L
     if (now - lastGestureAt < minimumInterval) return
-
-    val identity = if (config.inputMethod == "control") "control:${snapshot.controlFingerprint}"
-      else notificationFingerprint?.let { "notification:$it" } ?: "screen:${snapshot.fingerprint}"
+    val identity = notificationFingerprint?.let { "notification:$it" } ?: "screen:${snapshot.fingerprint}"
     if (!SafeAcceptStore.claimOfferIdentity(this, identity)) return
 
     val x = snapshot.markerCenterX ?: return
@@ -159,8 +189,7 @@ class PopMoveAccessibilityService : AccessibilityService() {
     SafeAcceptStore.record(
       this,
       "gesture",
-      if (config.inputMethod == "control") "Frase real visível; verificando comando disponível no cartão"
-      else "Frase real visível; toque longo confinado ao cartão da nova viagem"
+      "Frase real visível; toque longo confinado ao cartão da nova viagem"
     )
     dispatchLongPress(
       config,
@@ -183,7 +212,7 @@ class PopMoveAccessibilityService : AccessibilityService() {
     }
     val currentConfig = SafeAcceptStore.load(this)
     if (currentConfig.inputMethod == "control") {
-      dispatchControlLongClick(attempt)
+      dispatchControlLongClick(attempt.identity)
       return
     }
     val safeAttempt = resolveVisibleMarkerAttempt(attempt)
@@ -335,12 +364,13 @@ class PopMoveAccessibilityService : AccessibilityService() {
     )
   }
 
-  private fun dispatchControlLongClick(attempt: GestureAttempt) {
+  private fun dispatchControlLongClick(identity: String) {
     val root = rootInActiveWindow ?: return
     if (root.packageName?.toString() != POP_DRIVER_PACKAGE) { root.recycle(); return }
     val currentScreen = buildScreenSnapshot(root)
-    RideSessionStore.observe(this, currentScreen.idleVisible, currentScreen.anyOfferVisible)
-    if (!SafeAcceptStore.canDispatch(this, attempt.identity, false)) { root.recycle(); return }
+    observeOfferScreen(currentScreen)
+    if (!currentScreen.markerVisible || identity != "control:${currentScreen.controlFingerprint}" ||
+        !SafeAcceptStore.canDispatch(this, identity, false)) { root.recycle(); return }
     val scan = try { ControlTargetScanner.inspect(root, calculateSafeBounds(root)) } finally { root.recycle() }
     DiagnosticStore.card(this, scan.metadata)
     val target = scan.target
@@ -351,18 +381,24 @@ class PopMoveAccessibilityService : AccessibilityService() {
     offerResolutionInProgress = true
     try {
       val config = SafeAcceptStore.load(this)
-      if (config.inputMethod != "control" || !SafeAcceptStore.canDispatch(this, attempt.identity, false) ||
+      if (config.inputMethod != "control" || !SafeAcceptStore.canDispatch(this, identity, false) ||
           !isTargetWindowActive() || !target.refresh() || !target.isEnabled || !target.isVisibleToUser ||
           !target.isLongClickable || target.actionList.none { it.id == AccessibilityNodeInfo.ACTION_LONG_CLICK }) {
         DiagnosticStore.card(this, scan.metadata.put("reason", "changed_before_action").put("available", false))
         return
       }
+      // The card can appear before its button is ready. Claim it only at the actual command.
+      if (!SafeAcceptStore.claimOfferIdentity(this, identity)) return
       // Only invoke the action advertised by the visible card. No coordinate gesture or retry fallback.
       val result = runCatching { target.performAction(AccessibilityNodeInfo.ACTION_LONG_CLICK) }.getOrDefault(false)
       DiagnosticStore.command(this, "longClick", result)
       DiagnosticStore.card(this, scan.metadata.put("at", System.currentTimeMillis()).put("performed", result))
-      SafeAcceptStore.recordAcceptanceAttempt(this, attempt.identity)
-      SafeAcceptStore.currentOfferNotificationFingerprint(this)?.let { completeOfferSession("notification:$it") }
+      SafeAcceptStore.recordAcceptanceAttempt(this, identity)
+      if (foregroundHandoff != null) {
+        finishOfferHandoff(if (result) "command_sent" else "command_refused", null)
+      } else {
+        SafeAcceptStore.currentOfferNotificationFingerprint(this)?.let { completeOfferSession("notification:$it") }
+      }
       SafeAcceptStore.record(this, "system", if (result)
         "O controle respondeu ao pressionamento longo; confirme no PopMove se a corrida foi aceita."
         else "O controle recusou o pressionamento longo; nenhum toque substituto enviado.")
@@ -595,30 +631,121 @@ class PopMoveAccessibilityService : AccessibilityService() {
     )
   }
 
-  private fun scheduleOfferChecks(alreadyOpen: Boolean) {
-    val fingerprint = SafeAcceptStore.currentOfferNotificationFingerprint(this)
-    if (fingerprint != null && fingerprint != scrollOfferFingerprint) {
-      scrollOfferFingerprint = fingerprint
-      exhaustedScrollFingerprint = null
-      scrollAttempts = 0
-      lastScrollAt = 0L
+  private fun observeOfferScreen(snapshot: ScreenSnapshot) {
+    val handoff = foregroundHandoff
+    val preserveReady = OfferForegroundPolicy.preserveReadyDuringLoad(handoff?.state, SystemClock.elapsedRealtime())
+    val offerVisible = snapshot.markerVisible || snapshot.anyOfferVisible
+    if (handoff != null && offerVisible && !handoff.state.recognizedScreen) {
+      handoff.state = handoff.state.copy(recognizedScreen = true)
+    }
+    RideSessionStore.observe(this, snapshot.idleVisible, offerVisible, preserveReady)
+  }
+
+  private fun deviceReadyForOffer(): Boolean =
+    getSystemService(PowerManager::class.java)?.isInteractive == true &&
+      getSystemService(KeyguardManager::class.java)?.isKeyguardLocked == false
+
+  private fun offerHandoffBlocker(): Pair<String, String>? {
+    val config = SafeAcceptStore.load(this)
+    return when {
+      !config.armed -> "disabled" to "Nova viagem detectada; a chave está desligada"
+      !deviceReadyForOffer() -> "locked" to "Abertura da oferta aguardou tela ligada e desbloqueada"
+      overlayView != null -> "calibration" to "Abertura da oferta bloqueada durante a calibração"
+      !RideSessionPolicy.mayAccept(config.rideMode, RideSessionStore.load(this)) ->
+        "not_available" to "Uma por vez: oferta recebida sem confirmação de disponibilidade"
+      else -> null
+    }
+  }
+
+  private fun beginOfferHandoff(identity: String, postedAt: Long, openIntent: PendingIntent?) {
+    if (currentInstance !== this || !OfferForegroundPolicy.isFresh(postedAt, System.currentTimeMillis())) return
+    // Coalesce notices while one window transition is already underway.
+    if (foregroundHandoff != null) return
+    val blocker = offerHandoffBlocker()
+    if (blocker != null) {
+      DiagnosticStore.foreground(this, blocker.first)
+      SafeAcceptStore.record(this, "notification", blocker.second)
+      return
+    }
+    if (!SafeAcceptStore.markOfferNotification(this, identity)) return
+    foregroundHandoff = ForegroundHandoff(identity, openIntent, OfferForegroundPolicy.State(SystemClock.elapsedRealtime()))
+    advanceOfferHandoff()
+  }
+
+  private fun advanceOfferHandoff() {
+    val handoff = foregroundHandoff ?: return
+    offerHandler.removeCallbacks(foregroundCheck)
+    offerHandoffBlocker()?.let { (stage, message) ->
+      finishOfferHandoff(stage, message)
+      return
     }
 
-    longArrayOf(0L, 25L, 60L).forEach { delay ->
-      offerHandler.postDelayed({ evaluateActiveWindow() }, delay)
+    val now = SystemClock.elapsedRealtime()
+    val next = OfferForegroundPolicy.next(handoff.state, now, isTargetWindowActive(), handoff.openIntent != null)
+    when (next) {
+      OfferForegroundPolicy.Next.EXPIRED -> {
+        if (handoff.state.windowSeenAt == null) {
+          finishOfferHandoff("window_timeout", "A abertura foi solicitada, mas a janela do PopMove não foi confirmada")
+        } else {
+          finishOfferHandoff("card_timeout", "Janela do PopMove confirmada; nenhum comando do cartão enviado durante a verificação")
+        }
+      }
+      OfferForegroundPolicy.Next.READ_CARD -> {
+        if (handoff.state.windowSeenAt == null) {
+          handoff.state = handoff.state.copy(windowSeenAt = now)
+          reportForeground(handoff, "window_confirmed")
+          SafeAcceptStore.record(this, "notification", "Janela do PopMove confirmada; verificando o cartão")
+        }
+        evaluateActiveWindow(allowScroll = true)
+      }
+      OfferForegroundPolicy.Next.OPEN_NOTIFICATION, OfferForegroundPolicy.Next.OPEN_LAUNCHER -> {
+        val notificationRoute = next == OfferForegroundPolicy.Next.OPEN_NOTIFICATION
+        handoff.route = if (notificationRoute) "notification" else "launcher"
+        handoff.state = handoff.state.copy(requests = handoff.state.requests + 1, lastRequestAt = now)
+        val dispatched = requestPopMoveWindow(if (notificationRoute) handoff.openIntent else null)
+        handoff.state = handoff.state.copy(requestDispatched = dispatched)
+        DiagnosticStore.command(this, "open", dispatched)
+        reportForeground(handoff, if (dispatched) "open_requested" else "open_failed")
+        SafeAcceptStore.record(this, "notification", if (dispatched)
+          "Abertura do PopMove solicitada; aguardando confirmação da janela"
+        else "Não foi possível enviar a solicitação de abertura do PopMove")
+      }
+      OfferForegroundPolicy.Next.WAIT -> Unit
     }
-    val scrollStart = if (alreadyOpen) 80L else 130L
-    longArrayOf(0L, 80L, 170L, 290L, 440L, 630L, 850L).forEach { offset ->
-      offerHandler.postDelayed(
-        { evaluateActiveWindow(allowScroll = true) },
-        scrollStart + offset
-      )
+    if (foregroundHandoff === handoff) offerHandler.postDelayed(foregroundCheck, FOREGROUND_CHECK_INTERVAL_MS)
+  }
+
+  @Suppress("DEPRECATION")
+  private fun requestPopMoveWindow(openIntent: PendingIntent?): Boolean = runCatching {
+    if (openIntent != null) {
+      // On Android 14+, opt in for the trusted PopMove activity PendingIntent.
+      if (Build.VERSION.SDK_INT >= 34) {
+        val options = ActivityOptions.makeBasic()
+          .setPendingIntentBackgroundActivityStartMode(ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED)
+        openIntent.send(this, 0, null, null, null, null, options.toBundle())
+      } else {
+        openIntent.send()
+      }
+    } else {
+      val intent = packageManager.getLaunchIntentForPackage(POP_DRIVER_PACKAGE) ?: return@runCatching false
+      intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+      startActivity(intent)
     }
-    val finalScanDelay = if (alreadyOpen) 1_050L else 1_250L
-    offerHandler.postDelayed(
-      { evaluateActiveWindow(allowScroll = true) },
-      finalScanDelay
-    )
+    true
+  }.getOrDefault(false)
+
+  private fun reportForeground(handoff: ForegroundHandoff, stage: String) {
+    DiagnosticStore.foreground(this, stage, handoff.state.requests, handoff.state.windowSeenAt != null,
+      handoff.route, SystemClock.elapsedRealtime() - handoff.state.startedAt)
+  }
+
+  private fun finishOfferHandoff(stage: String, message: String?) {
+    val handoff = foregroundHandoff ?: return
+    foregroundHandoff = null
+    offerHandler.removeCallbacks(foregroundCheck)
+    completeOfferSession("notification:${handoff.identity}")
+    reportForeground(handoff, stage)
+    if (message != null) SafeAcceptStore.record(this, "notification", message)
   }
 
   private fun sha256(value: String): String {
@@ -808,6 +935,8 @@ class PopMoveAccessibilityService : AccessibilityService() {
     private const val RETRY_DELAY_MS = 60L
     private const val POST_GESTURE_SCAN_DELAY_MS = 30L
     private const val MAX_GESTURE_RETRIES = 1
+    private const val FOREGROUND_CHECK_INTERVAL_MS = 180L
+    private const val CONTROL_PROBE_INTERVAL_MS = 180L
 
     @Volatile
     private var currentInstance: PopMoveAccessibilityService? = null
@@ -838,8 +967,17 @@ class PopMoveAccessibilityService : AccessibilityService() {
       return currentInstance?.isTargetWindowActive() ?: false
     }
 
-    fun onOfferNotification(alreadyOpen: Boolean) {
-      currentInstance?.scheduleOfferChecks(alreadyOpen)
+    fun onOfferNotification(context: Context, identity: String, postedAt: Long, openIntent: PendingIntent?) {
+      val service = currentInstance
+      if (service == null) {
+        DiagnosticStore.foreground(context, "accessibility_disconnected")
+        return
+      }
+      service.offerHandler.post { service.beginOfferHandoff(identity, postedAt, openIntent) }
+    }
+
+    fun stopOfferHandoff() {
+      currentInstance?.finishOfferHandoff("disabled", "Verificação da oferta encerrada pela chave do painel")
     }
   }
 }

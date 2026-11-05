@@ -78,6 +78,21 @@ object DiagnosticStore {
   }
 
   @Synchronized
+  fun foreground(
+    context: Context,
+    stage: String,
+    requests: Int = 0,
+    windowConfirmed: Boolean = false,
+    route: String? = null,
+    elapsedMs: Long = 0L
+  ) {
+    val sample = JSONObject().put("at", System.currentTimeMillis()).put("stage", stage)
+      .put("requests", requests).put("windowConfirmed", windowConfirmed)
+      .put("route", route ?: JSONObject.NULL).put("elapsedMs", elapsedMs)
+    prefs(context).edit().putString("lastForeground", sample.toString()).apply()
+  }
+
+  @Synchronized
   fun observation(context: Context, result: String, state: JSONObject) {
     require(result in listOf("appeared", "not_observed"))
     val p = prefs(context)
@@ -97,7 +112,7 @@ object DiagnosticStore {
   fun snapshot(context: Context, state: JSONObject): String {
     val p = prefs(context)
     return JSONObject()
-      .put("schema", 4)
+      .put("schema", 5)
       .put("appVersion", packageVersion(context, context.packageName))
       .put("popMoveVersion", packageVersion(context, TARGET))
       .put("device", "${Build.MANUFACTURER} ${Build.MODEL}")
@@ -112,6 +127,7 @@ object DiagnosticStore {
       .put("lastOffer", readObject(p.getString("lastOffer", null)))
       .put("notificationHistory", readArray(p.getString("notificationHistory", null)))
       .put("lastCard", readObject(p.getString("lastCard", null)))
+      .put("lastForeground", readObject(p.getString("lastForeground", null)))
       .put("controlTest", readObject(p.getString("controlTest", null)))
       .put("pressCount", p.getInt("pressCount", 0))
       .put("longClickCount", p.getInt("longClickCount", 0))

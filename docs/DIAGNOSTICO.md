@@ -23,3 +23,9 @@ Não guarda textos, nomes, endereços, valores ou conteúdo de comandos. Até 20
 ## Verificação
 
 TypeScript, ESLint, Vitest, testes JVM, build Android, identidade do pacote e assinatura antes da entrega. A validação real da retomada após terminar uma viagem e da rolagem simultânea depende do aparelho autenticado.
+
+## Abertura a partir de outro aplicativo — relatório v5
+
+Na 0.14.1, **Último fluxo de abertura** separa a solicitação ao Android, a janela confirmada pela Acessibilidade e o comando do cartão. Uma solicitação enviada pode não colocar o PopMove na tela. O relatório identifica também disponibilidade não confirmada, tela bloqueada e serviço desconectado.
+
+Para verificar no Moto G84, ligue a chave em **Uma por vez**, deixe o PopMove mostrar **Aguarde uma solicitação** e então abra o WhatsApp com a tela desbloqueada. Se uma oferta chegar e houver falha, confira se o PopMove chegou a aparecer e copie o relatório. A confirmação do comando não comprova aceite pelo servidor.

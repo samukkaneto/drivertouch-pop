@@ -16,9 +16,9 @@ object RideSessionStore {
     val current = load(context)
     save(context, current.copy(phase = if (current.phase in listOf("busy", "awaiting_trip")) current.phase else "unknown", idleSince = 0L))
   }
-  fun observe(context: Context, idleVisible: Boolean, offerVisible: Boolean) {
+  fun observe(context: Context, idleVisible: Boolean, offerVisible: Boolean, preserveReadyDuringLoad: Boolean = false) {
     val previous = load(context)
-    val next = RideSessionPolicy.observe(previous, idleVisible, offerVisible, System.currentTimeMillis())
+    val next = RideSessionPolicy.observe(previous, idleVisible, offerVisible, System.currentTimeMillis(), preserveReadyDuringLoad)
     if (next == previous) return
     save(context, next)
     if (next.phase == "ready" && previous.phase != "ready") {

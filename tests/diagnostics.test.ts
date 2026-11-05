@@ -49,6 +49,29 @@ const offer: NotificationSample = {
 };
 
 describe("diagnostic evidence", () => {
+  it("distinguishes a sent opening request from an observed PopMove window", () => {
+    const current: DiagnosticSnapshot = {
+      ...snapshot,
+      schema: 5,
+      lastOffer: offer,
+      openCount: 2,
+      commands: [{ at: offer.at, kind: "open", dispatched: true }],
+      lastForeground: {
+        at: offer.at + 5500,
+        stage: "window_timeout",
+        requests: 2,
+        route: "launcher",
+        windowConfirmed: false,
+        elapsedMs: 5500,
+      },
+    };
+    const report = formatDiagnosticReport(current);
+    expect(report).toContain("janela do PopMove não confirmada");
+    expect(report).toContain("Solicitações: 2");
+    expect(report).toContain("janela confirmada: não");
+    expect(report).toContain("open; envio concluído: sim");
+  });
+
   it("keeps the current switch state visible even when the report contains an earlier successful command", () => {
     const current: DiagnosticSnapshot = {
       ...snapshot,
