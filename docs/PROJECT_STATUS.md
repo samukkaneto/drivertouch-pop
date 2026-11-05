@@ -2,6 +2,16 @@
 
 Atualizado em **05/11/2026**. Este documento é a fonte principal para qualquer pessoa ou IA que precise entender e continuar o projeto sem acesso às conversas anteriores.
 
+## Entrega verificada — 0.14.1
+
+- APK: https://github.com/samukkaneto/drivertouch-pop/releases/download/v0.14.1/Toalha-Vermelha-0.14.1.apk
+- Build e publicação: https://github.com/samukkaneto/drivertouch-pop/actions/runs/42017285414
+- Commit compilado: `bae2c765901afe5ccac508a631ab4ab833aa16f4`; branch `codex/abertura-ofertas-0.14.1`.
+- Pacote `com.toalhaver.vermelha`, versão 0.14.1, código 17; 59.616.500 bytes. SHA-256: `1042918f07450b196017f37dbc2013e3b03a5211d59b186c37671797a70849a5`.
+- Assinatura v2 verificada; certificado SHA-256 `fac61745dc0903786fb9ede62a962b399f7348f0bb6f899b8332667591033b9c`, igual ao da 0.14.0. Atualização por cima compatível.
+- TypeScript, ESLint, 31 testes Vitest, testes nativos Kotlin/JUnit e build Android aprovados. O APK baixado corresponde ao hash da compilação e do arquivo publicado.
+- O caminho com oferta real chegando enquanto o WhatsApp está aberto ainda precisa ser confirmado no Moto G84. O relatório v5 diferencia solicitação de abertura, janela confirmada e comando do cartão.
+
 ## Atualização 0.14.1 — abertura do PopMove a partir de outro aplicativo
 
 Atualizado em 05/11/2026.
